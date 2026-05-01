@@ -186,25 +186,23 @@ Public Class Form3
 
     End Sub
 
-    Private Sub NameCBFuellen()
+    Private Sub LoadDistinctValues(target As ComboBox, query As String, columnName As String)
 
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
+        Dim com As New SQLiteCommand(query, con)
         Dim rd As SQLiteDataReader
 
+        target.Items.Clear()
         con.Open()
 
         If con.State = ConnectionState.Open Then
 
             Try
 
-                com = New SQLiteCommand("SELECT DISTINCT Name FROM Empfaenger", con)
-
                 rd = com.ExecuteReader
 
                 Do While rd.Read()
 
-                    NameCB.Items.Add(rd("Name"))
+                    target.Items.Add(rd(columnName))
 
                 Loop
 
@@ -219,6 +217,12 @@ Public Class Form3
             End Try
 
         End If
+
+    End Sub
+
+    Private Sub NameCBFuellen()
+
+        LoadDistinctValues(NameCB, "SELECT DISTINCT Name FROM Empfaenger", "Name")
 
     End Sub
 
@@ -262,37 +266,7 @@ Public Class Form3
 
     Private Sub AbladestelleCBFuellen()
 
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
-        Dim rd As SQLiteDataReader
-
-        con.Open()
-
-        If con.State = ConnectionState.Open Then
-
-            Try
-
-                com = New SQLiteCommand("SELECT DISTINCT Abladestelle FROM Empfaenger", con)
-
-                rd = com.ExecuteReader
-
-                Do While rd.Read()
-
-                    AbladestelleCB.Items.Add(rd("Abladestelle"))
-
-                Loop
-
-                rd.Close()
-                con.Close()
-                com.Dispose()
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        LoadDistinctValues(AbladestelleCB, "SELECT DISTINCT Abladestelle FROM Empfaenger", "Abladestelle")
 
     End Sub
 
@@ -335,37 +309,7 @@ Public Class Form3
 
     Private Sub MandantCBFuellen()
 
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
-        Dim rd As SQLiteDataReader
-
-        con.Open()
-
-        If con.State = ConnectionState.Open Then
-
-            Try
-
-                com = New SQLiteCommand("SELECT DISTINCT Mandant FROM Empfaenger", con)
-
-                rd = com.ExecuteReader
-
-                Do While rd.Read()
-
-                    MandantCB.Items.Add(rd("Mandant"))
-
-                Loop
-
-                rd.Close()
-                con.Close()
-                com.Dispose()
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        LoadDistinctValues(MandantCB, "SELECT DISTINCT Mandant FROM Empfaenger", "Mandant")
 
     End Sub
 

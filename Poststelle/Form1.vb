@@ -242,8 +242,9 @@ Public Class Form1
                     (
                     0,
                     30,                    
-                    '" & Patch & "'                    
+                    @AutodbBackupPfad                    
                     )", con)
+                com.Parameters.AddWithValue("@AutodbBackupPfad", Patch)
 
                 com.ExecuteNonQuery()
                 con.Close()
@@ -252,6 +253,51 @@ Public Class Form1
 
                 EmpfaengerCBFuellen()
                 SenderCBFuellen()
+            Catch ex As Exception
+
+                MsgBox("Fehler:" & ex.Message)
+
+            End Try
+
+        End If
+
+    End Sub
+
+    Private Sub LoadDistinctValues(target As ComboBox, query As String, columnName As String, Optional parameterName As String = Nothing, Optional parameterValue As Object = Nothing)
+
+        Dim com As New SQLiteCommand(query, con)
+        Dim rd As SQLiteDataReader
+
+        If Not target Is SeiteCB Then
+
+            target.Items.Clear()
+
+        End If
+
+        If parameterName IsNot Nothing Then
+
+            com.Parameters.AddWithValue(parameterName, parameterValue)
+
+        End If
+
+        con.Open()
+
+        If con.State = ConnectionState.Open Then
+
+            Try
+
+                rd = com.ExecuteReader
+
+                Do While rd.Read()
+
+                    target.Items.Add(rd(columnName))
+
+                Loop
+
+                rd.Close()
+                con.Close()
+                com.Dispose()
+
             Catch ex As Exception
 
                 MsgBox("Fehler:" & ex.Message)
@@ -414,39 +460,7 @@ Public Class Form1
 
     Private Sub SenderCBFuellen()
 
-        SenderCB.Items.Clear()
-
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
-        Dim rd As SQLiteDataReader
-
-        con.Open()
-
-        If con.State = ConnectionState.Open Then
-
-            Try
-
-                com = New SQLiteCommand("SELECT DISTINCT Sender FROM Packete", con)
-
-                rd = com.ExecuteReader
-
-                Do While rd.Read()
-
-                    SenderCB.Items.Add(rd("Sender"))
-
-                Loop
-
-                rd.Close()
-                con.Close()
-                com.Dispose()
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        LoadDistinctValues(SenderCB, "SELECT DISTINCT Sender FROM Packete", "Sender")
 
     End Sub
 
@@ -503,39 +517,7 @@ Public Class Form1
 
     Public Sub EmpfaengerCBFuellen()
 
-        EmpfaengerCB.Items.Clear()
-
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
-        Dim rd As SQLiteDataReader
-
-        con.Open()
-
-        If con.State = ConnectionState.Open Then
-
-            Try
-
-                com = New SQLiteCommand("SELECT DISTINCT Name FROM Empfaenger", con)
-
-                rd = com.ExecuteReader
-
-                Do While rd.Read()
-
-                    EmpfaengerCB.Items.Add(rd("Name"))
-
-                Loop
-
-                rd.Close()
-                con.Close()
-                com.Dispose()
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        LoadDistinctValues(EmpfaengerCB, "SELECT DISTINCT Name FROM Empfaenger", "Name")
 
     End Sub
 
@@ -809,43 +791,10 @@ Public Class Form1
 
         DTM = DateTimePicker.Text
 
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
-        Dim rd As SQLiteDataReader
-
         SeiteCB.Items.Clear()
-
-        con.Open()
-
-        If con.State = ConnectionState.Open Then
-
-            Try
-
-                com = New SQLiteCommand("SELECT DISTINCT Mandant FROM Packete WHERE Datum = @Datum", con)
-                com.Parameters.AddWithValue("@Datum", DTM)
-
-                rd = com.ExecuteReader
-
-                Do While rd.Read()
-
-                    SeiteCB.Items.Add(rd("Mandant"))
-
-                Loop
-
-                SeiteCB.Items.Add("Alle")
-                SeiteCB.SelectedItem = Mand
-
-                rd.Close()
-                con.Close()
-                com.Dispose()
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        LoadDistinctValues(SeiteCB, "SELECT DISTINCT Mandant FROM Packete WHERE Datum = @Datum", "Mandant", "@Datum", DTM)
+        SeiteCB.Items.Add("Alle")
+        SeiteCB.SelectedItem = Mand
 
     End Sub
 
@@ -955,78 +904,21 @@ Public Class Form1
 
     Private Sub GenSeite()
 
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
-        Dim rd As SQLiteDataReader
-
         SeiteCB.Items.Clear()
-
-        con.Open()
 
         If DatumFilterCB.Checked Then
 
             DTM = DateTimePicker.Text
 
-            If con.State = ConnectionState.Open Then
-
-                Try
-
-                    com = New SQLiteCommand("SELECT DISTINCT Mandant FROM Packete WHERE Datum = @Datum", con)
-                    com.Parameters.AddWithValue("@Datum", DTM)
-
-                    rd = com.ExecuteReader
-
-                    Do While rd.Read()
-
-                        SeiteCB.Items.Add(rd("Mandant"))
-
-                    Loop
-
-                    SeiteCB.Items.Add("Alle")
-
-                    rd.Close()
-                    con.Close()
-                    com.Dispose()
-
-                Catch ex As Exception
-
-                    MsgBox("Fehler:" & ex.Message)
-
-                End Try
-
-            End If
+            LoadDistinctValues(SeiteCB, "SELECT DISTINCT Mandant FROM Packete WHERE Datum = @Datum", "Mandant", "@Datum", DTM)
 
         Else
 
-            If con.State = ConnectionState.Open Then
-
-                Try
-
-                    com = New SQLiteCommand("SELECT DISTINCT Mandant FROM Packete", con)
-
-                    rd = com.ExecuteReader
-
-                    Do While rd.Read()
-
-                        SeiteCB.Items.Add(rd("Mandant"))
-
-                    Loop
-
-                    SeiteCB.Items.Add("Alle")
-
-                    rd.Close()
-                    con.Close()
-                    com.Dispose()
-
-                Catch ex As Exception
-
-                    MsgBox("Fehler:" & ex.Message)
-
-                End Try
-
-            End If
+            LoadDistinctValues(SeiteCB, "SELECT DISTINCT Mandant FROM Packete", "Mandant")
 
         End If
+
+        SeiteCB.Items.Add("Alle")
 
     End Sub
 
