@@ -513,14 +513,21 @@ Public Class Form1
             DataGridView1.Columns("Gedruckt").Visible = False
 
             DataGridView1.Columns(1).DataPropertyName = "Mandant"
+            DataGridView1.Columns(1).HeaderText = "Mandant"
             DataGridView1.Columns(2).DataPropertyName = "Datum"
+            DataGridView1.Columns(2).HeaderText = "Datum"
             DataGridView1.Columns(3).DataPropertyName = "Abladestelle"
+            DataGridView1.Columns(3).HeaderText = "Abladestelle"
             DataGridView1.Columns(4).DataPropertyName = "Sender"
+            DataGridView1.Columns(4).HeaderText = "Sender"
             DataGridView1.Columns(5).DataPropertyName = "SendungsNummer"
+            DataGridView1.Columns(5).HeaderText = "SendungsNummer"
             DataGridView1.Columns(5).DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
             DataGridView1.Columns(6).DataPropertyName = "Empfaenger"
+            DataGridView1.Columns(6).HeaderText = "Empfaenger"
             DataGridView1.Sort(DataGridView1.Columns(6), System.ComponentModel.ListSortDirection.Ascending)
             DataGridView1.Columns(7).DataPropertyName = "Unterschrift"
+            DataGridView1.Columns(7).HeaderText = "Unterschrift"
 
         Catch ex As Exception
 

@@ -125,7 +125,7 @@ Module DataGridViewPrinter
                 If oColumn.Visible = True Then
                     nWidth = CType(Math.Floor(oColumn.Width / nTotalWidth * nTotalWidth * (e.MarginBounds.Width / nTotalWidth)), Int16)
 
-                    nHeight = e.Graphics.MeasureString(oColumn.HeaderText, oColumn.InheritedStyle.Font, nWidth).Height + 20
+                    nHeight = e.Graphics.MeasureString(GetPrintableHeaderText(oColumn), oColumn.InheritedStyle.Font, nWidth).Height + 20
 
                     oColumnLefts.Add(nLeft)
                     oColumnWidths.Add(nWidth)
@@ -175,7 +175,7 @@ Module DataGridViewPrinter
                             If oColumn.Visible = True Then
                                 e.Graphics.FillRectangle(New SolidBrush(Drawing.Color.LightGray), New Rectangle(oColumnLefts(i), nTop, oColumnWidths(i), nHeight))
                                 e.Graphics.DrawRectangle(Pens.Black, New Rectangle(oColumnLefts(i), nTop, oColumnWidths(i), nHeight))
-                            e.Graphics.DrawString(oColumn.HeaderText, New Font("Arial", 9, FontStyle.Bold), New SolidBrush(oColumn.InheritedStyle.ForeColor), New RectangleF(oColumnLefts(i), nTop, oColumnWidths(i), nHeight), oStringFormat)
+                            e.Graphics.DrawString(GetPrintableHeaderText(oColumn), New Font("Arial", 9, FontStyle.Bold), New SolidBrush(oColumn.InheritedStyle.ForeColor), New RectangleF(oColumnLefts(i), nTop, oColumnWidths(i), nHeight), oStringFormat)
                             i += 1
                             End If
 
@@ -244,6 +244,24 @@ Module DataGridViewPrinter
         e.HasMorePages = False
 
     End Sub
+
+    Private Function GetPrintableHeaderText(oColumn As DataGridViewColumn) As String
+
+        If Not String.IsNullOrWhiteSpace(oColumn.HeaderText) AndAlso oColumn.HeaderText <> "#" Then
+
+            Return oColumn.HeaderText
+
+        End If
+
+        If Not String.IsNullOrWhiteSpace(oColumn.DataPropertyName) Then
+
+            Return oColumn.DataPropertyName
+
+        End If
+
+        Return oColumn.Name
+
+    End Function
 
     Public Sub DrawFooter(ByVal e As System.Drawing.Printing.PrintPageEventArgs, ByVal RowsPerPage As Int32)
 
