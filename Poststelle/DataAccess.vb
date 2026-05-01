@@ -104,6 +104,15 @@ Public Class PackageRecord
 
 End Class
 
+Public Class ScanRuleRecord
+
+    Public Property Id As Integer
+    Public Property Carrier As String
+    Public Property TrackingPrefix As String
+    Public Property Empfaenger As String
+
+End Class
+
 Public Class RecipientFilter
 
     Public Property Name As String
@@ -124,6 +133,14 @@ Public Class PackageFilter
 End Class
 
 Public Class SettingsRepository
+
+    Public Sub EnsureDatabaseReady()
+
+        CreateDatabase()
+        CreateSchema()
+        EnsureDefaultSettings()
+
+    End Sub
 
     Public Function DatabaseExists() As Boolean
 
@@ -169,7 +186,7 @@ Public Class SettingsRepository
         Using connection As New SQLiteConnection(DatabaseConfig.ConnectionString)
             connection.Open()
 
-            ExecuteNonQuery(connection, "CREATE TABLE Packete (" &
+            ExecuteNonQuery(connection, "CREATE TABLE IF NOT EXISTS Packete (" &
                                         "ID INTEGER Not NULL," &
                                         "Mandant TEXT," &
                                         "Datum TEXT," &
@@ -181,19 +198,28 @@ Public Class SettingsRepository
                                         "Gedruckt TEXT," &
                                         "PRIMARY KEY(ID));")
 
-            ExecuteNonQuery(connection, "CREATE TABLE Empfaenger (" &
+            ExecuteNonQuery(connection, "CREATE TABLE IF NOT EXISTS Empfaenger (" &
                                         "ID INTEGER Not NULL," &
                                         "Name TEXT," &
                                         "Abladestelle TEXT," &
                                         "Mandant TEXT," &
                                         "PRIMARY KEY(ID));")
 
-            ExecuteNonQuery(connection, "CREATE TABLE Einstellungen (" &
+            ExecuteNonQuery(connection, "CREATE TABLE IF NOT EXISTS Einstellungen (" &
                                         "ID INTEGER Not NULL," &
                                         "AutodbBackup TEXT," &
                                         "AutodbBackupTime TEXT," &
                                         "AutodbBackupPfad TEXT," &
                                         "PRIMARY KEY(ID));")
+
+            ExecuteNonQuery(connection, "CREATE TABLE IF NOT EXISTS ScanRegeln (" &
+                                        "ID INTEGER Not NULL," &
+                                        "Carrier TEXT," &
+                                        "TrackingPrefix TEXT," &
+                                        "Empfaenger TEXT," &
+                                        "PRIMARY KEY(ID));")
+
+            ExecuteNonQuery(connection, "CREATE UNIQUE INDEX IF NOT EXISTS IX_ScanRegeln_Carrier_Prefix ON ScanRegeln(Carrier, TrackingPrefix);")
         End Using
 
     End Sub
@@ -203,7 +229,7 @@ Public Class SettingsRepository
         Using connection As New SQLiteConnection(DatabaseConfig.ConnectionString)
             connection.Open()
 
-            Using command As New SQLiteCommand("INSERT INTO Einstellungen (AutodbBackup, AutodbBackupTime, AutodbBackupPfad) VALUES (0, 30, @AutodbBackupPfad)", connection)
+            Using command As New SQLiteCommand("INSERT INTO Einstellungen (ID, AutodbBackup, AutodbBackupTime, AutodbBackupPfad) VALUES (1, 0, 30, @AutodbBackupPfad)", connection)
                 AddTextParameter(command, "@AutodbBackupPfad", DatabaseConfig.DefaultBackupFilePath)
                 command.ExecuteNonQuery()
             End Using
@@ -269,6 +295,23 @@ Public Class SettingsRepository
         End Using
 
     End Function
+
+    Private Sub EnsureDefaultSettings()
+
+        Using connection As New SQLiteConnection(DatabaseConfig.ConnectionString)
+            connection.Open()
+
+            Using command As New SQLiteCommand("SELECT COUNT(*) FROM Einstellungen WHERE ID = 1", connection)
+                If Convert.ToInt32(command.ExecuteScalar()) = 0 Then
+                    Using insertCommand As New SQLiteCommand("INSERT INTO Einstellungen (ID, AutodbBackup, AutodbBackupTime, AutodbBackupPfad) VALUES (1, 0, 30, @AutodbBackupPfad)", connection)
+                        AddTextParameter(insertCommand, "@AutodbBackupPfad", DatabaseConfig.DefaultBackupFilePath)
+                        insertCommand.ExecuteNonQuery()
+                    End Using
+                End If
+            End Using
+        End Using
+
+    End Sub
 
 End Class
 
@@ -379,6 +422,45 @@ Public Class RecipientRepository
         Return values
 
     End Function
+
+End Class
+
+Public Class ScanRuleRepository
+
+    Public Function FindRecipientByCarrierAndPrefix(carrier As String, trackingPrefix As String) As String
+
+        Using connection As New SQLiteConnection(DatabaseConfig.ConnectionString)
+            connection.Open()
+
+            Using command As New SQLiteCommand("SELECT Empfaenger FROM ScanRegeln WHERE Carrier = @Carrier AND TrackingPrefix = @TrackingPrefix", connection)
+                AddTextParameter(command, "@Carrier", carrier)
+                AddTextParameter(command, "@TrackingPrefix", trackingPrefix)
+
+                Dim result As Object = command.ExecuteScalar()
+                If result IsNot Nothing AndAlso result IsNot DBNull.Value Then
+                    Return Convert.ToString(result)
+                End If
+            End Using
+        End Using
+
+        Return String.Empty
+
+    End Function
+
+    Public Sub Upsert(rule As ScanRuleRecord)
+
+        Using connection As New SQLiteConnection(DatabaseConfig.ConnectionString)
+            connection.Open()
+
+            Using command As New SQLiteCommand("INSERT OR REPLACE INTO ScanRegeln (ID, Carrier, TrackingPrefix, Empfaenger) VALUES ((SELECT ID FROM ScanRegeln WHERE Carrier = @Carrier AND TrackingPrefix = @TrackingPrefix), @Carrier, @TrackingPrefix, @Empfaenger)", connection)
+                AddTextParameter(command, "@Carrier", rule.Carrier)
+                AddTextParameter(command, "@TrackingPrefix", rule.TrackingPrefix)
+                AddTextParameter(command, "@Empfaenger", rule.Empfaenger)
+                command.ExecuteNonQuery()
+            End Using
+        End Using
+
+    End Sub
 
 End Class
 

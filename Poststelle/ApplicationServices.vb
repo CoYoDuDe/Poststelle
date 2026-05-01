@@ -136,8 +136,10 @@ Public Class ShippingLabelParseResult
     Public Property RawInput As String
     Public Property CleanedTrackingNumber As String
     Public Property DetectedCarrier As String
+    Public Property TrackingPrefix As String
     Public Property MatchedRecipient As String
     Public Property WasNormalized As Boolean
+    Public Property WasMatchedByStoredRule As Boolean
 
 End Class
 
@@ -152,8 +154,10 @@ Public Class ShippingLabelParser
             .RawInput = input,
             .CleanedTrackingNumber = normalizedInput,
             .DetectedCarrier = String.Empty,
+            .TrackingPrefix = String.Empty,
             .MatchedRecipient = String.Empty,
-            .WasNormalized = False
+            .WasNormalized = False,
+            .WasMatchedByStoredRule = False
         }
 
         If String.IsNullOrWhiteSpace(normalizedInput) OrElse
@@ -170,6 +174,7 @@ Public Class ShippingLabelParser
 
         result.CleanedTrackingNumber = bestCandidate
         result.DetectedCarrier = carrier
+        result.TrackingPrefix = GetTrackingPrefix(bestCandidate, carrier)
         result.MatchedRecipient = recipient
         result.WasNormalized = Not String.Equals(normalizedInput, bestCandidate, StringComparison.Ordinal)
 
@@ -255,6 +260,37 @@ Public Class ShippingLabelParser
         End If
 
         Return String.Empty
+
+    End Function
+
+    Public Function GetTrackingPrefix(trackingNumber As String, carrier As String) As String
+
+        If String.IsNullOrWhiteSpace(trackingNumber) Then
+
+            Return String.Empty
+
+        End If
+
+        Dim prefixLength As Integer
+
+        Select Case carrier
+
+            Case "UPS"
+                prefixLength = 8
+            Case "DHL"
+                prefixLength = 10
+            Case "DPD"
+                prefixLength = 7
+            Case "GLS"
+                prefixLength = 6
+            Case "FedEx"
+                prefixLength = 8
+            Case Else
+                prefixLength = 8
+
+        End Select
+
+        Return trackingNumber.Substring(0, Math.Min(prefixLength, trackingNumber.Length)).ToUpperInvariant()
 
     End Function
 

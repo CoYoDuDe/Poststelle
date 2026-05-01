@@ -7,6 +7,7 @@ Public Class Form1
     Private ReadOnly settingsRepository As New SettingsRepository()
     Private ReadOnly recipientRepository As New RecipientRepository()
     Private ReadOnly packageRepository As New PackageRepository()
+    Private ReadOnly scanRuleRepository As New ScanRuleRepository()
     Private ReadOnly packageFormService As New PackageFormService()
     Private ReadOnly shippingLabelParser As New ShippingLabelParser()
 
@@ -97,16 +98,9 @@ Public Class Form1
 
         Try
 
-            If settingsRepository.HasRequiredSchema() Then
-
-                ReloadUiData()
-                AutodbBackupEX()
-
-            Else
-
-                Dbersstellen()
-
-            End If
+            settingsRepository.EnsureDatabaseReady()
+            ReloadUiData()
+            AutodbBackupEX()
         Finally
 
             isInitializing = False
@@ -476,6 +470,7 @@ Public Class Form1
                                                                           SenderCB.Text,
                                                                           SendungsNummerTB.Text))
 
+            RememberScanRule(recipient.Name, SendungsNummerTB.Text)
             SenderCBFuellen()
             SenderCB.Focus()
             ResetEntryFields()
@@ -715,10 +710,47 @@ Public Class Form1
 
     End Function
 
+    Private Sub RememberScanRule(recipientName As String, trackingNumber As String)
+
+        Dim parseResult As ShippingLabelParseResult =
+            shippingLabelParser.Parse(trackingNumber, GetComboBoxValues(EmpfaengerCB))
+
+        If String.IsNullOrWhiteSpace(parseResult.DetectedCarrier) OrElse
+           String.IsNullOrWhiteSpace(parseResult.TrackingPrefix) OrElse
+           String.IsNullOrWhiteSpace(recipientName) Then
+
+            Exit Sub
+
+        End If
+
+        scanRuleRepository.Upsert(New ScanRuleRecord With {
+            .Carrier = parseResult.DetectedCarrier,
+            .TrackingPrefix = parseResult.TrackingPrefix,
+            .Empfaenger = recipientName
+        })
+
+    End Sub
+
     Private Sub ApplyLabelScanParsing()
 
         Dim parseResult As ShippingLabelParseResult =
             shippingLabelParser.Parse(SendungsNummerTB.Text, GetComboBoxValues(EmpfaengerCB))
+
+        If String.IsNullOrWhiteSpace(parseResult.MatchedRecipient) AndAlso
+           Not String.IsNullOrWhiteSpace(parseResult.DetectedCarrier) AndAlso
+           Not String.IsNullOrWhiteSpace(parseResult.TrackingPrefix) Then
+
+            Dim storedRecipient As String =
+                scanRuleRepository.FindRecipientByCarrierAndPrefix(parseResult.DetectedCarrier, parseResult.TrackingPrefix)
+
+            If Not String.IsNullOrWhiteSpace(storedRecipient) Then
+
+                parseResult.MatchedRecipient = storedRecipient
+                parseResult.WasMatchedByStoredRule = True
+
+            End If
+
+        End If
 
         If String.IsNullOrWhiteSpace(parseResult.CleanedTrackingNumber) Then
 
@@ -769,7 +801,15 @@ Public Class Form1
 
         If Not String.IsNullOrWhiteSpace(parseResult.MatchedRecipient) Then
 
-            parts.Add("Empfaenger: " & parseResult.MatchedRecipient)
+            If parseResult.WasMatchedByStoredRule Then
+
+                parts.Add("Empfaenger-Regel: " & parseResult.MatchedRecipient)
+
+            Else
+
+                parts.Add("Empfaenger: " & parseResult.MatchedRecipient)
+
+            End If
 
         End If
 
