@@ -9,6 +9,7 @@ Public Class Form3
     Dim drag As Boolean
     Dim mousex As Integer
     Dim mousey As Integer
+    Private isInitializing As Boolean = True
 
     Const WM_NCLBUTTONDOWN As Integer = &HA1S
     Const HTBOTTOMRIGHT As Integer = 17
@@ -46,7 +47,14 @@ Public Class Form3
 
     Private Sub Form3_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
-        ReloadUiData()
+        Try
+
+            ReloadUiData()
+        Finally
+
+            isInitializing = False
+
+        End Try
 
     End Sub
 
@@ -56,7 +64,7 @@ Public Class Form3
 
     End Sub
 
-    Private Sub SchließenButton_Click(sender As Object, e As EventArgs) Handles SchließenButton.Click
+    Private Sub SchliessenButton_Click(sender As Object, e As EventArgs) Handles SchließenButton.Click
 
         Me.Close()
 
@@ -111,7 +119,11 @@ Public Class Form3
 
     Private Sub NameCB_TextChanged(sender As Object, e As EventArgs) Handles NameCB.TextChanged
 
-        UpdGrid()
+        If Not isInitializing Then
+
+            UpdGrid()
+
+        End If
 
     End Sub
 
@@ -144,7 +156,11 @@ Public Class Form3
 
     Private Sub AbladestelleCB_TextChanged(sender As Object, e As EventArgs) Handles AbladestelleCB.TextChanged
 
-        UpdGrid()
+        If Not isInitializing Then
+
+            UpdGrid()
+
+        End If
 
     End Sub
 
@@ -176,7 +192,11 @@ Public Class Form3
 
     Private Sub MandantCB_TextChanged(sender As Object, e As EventArgs) Handles MandantCB.TextChanged
 
-        UpdGrid()
+        If Not isInitializing Then
+
+            UpdGrid()
+
+        End If
 
     End Sub
 
@@ -205,15 +225,24 @@ Public Class Form3
                                                                                  MandantCB.Text))
             myBindingSource.DataSource = myData
 
+            DataGridView1.AutoGenerateColumns = True
             DataGridView1.DataSource = myBindingSource
-            DataGridView1.AutoGenerateColumns = False
 
-            DataGridView1.Columns("ID").Visible = False
+            If DataGridView1.Columns.Count > 0 Then
 
-            DataGridView1.Columns(1).DataPropertyName = "Name"
-            DataGridView1.Sort(DataGridView1.Columns(1), System.ComponentModel.ListSortDirection.Ascending)
-            DataGridView1.Columns(2).DataPropertyName = "Abladestelle"
-            DataGridView1.Columns(3).DataPropertyName = "Mandant"
+                If DataGridView1.Columns.Contains("ID") Then
+
+                    DataGridView1.Columns("ID").Visible = False
+
+                End If
+
+                If DataGridView1.Columns.Count > 1 Then
+
+                    DataGridView1.Sort(DataGridView1.Columns(1), System.ComponentModel.ListSortDirection.Ascending)
+
+                End If
+
+            End If
 
         Catch ex As Exception
 
@@ -225,7 +254,11 @@ Public Class Form3
 
     Private Sub CellValueChanged(ByVal sender As Object, ByVal e As DataGridViewCellEventArgs) Handles DataGridView1.CellValueChanged
 
-        GridSaveChange()
+        If Not isInitializing Then
+
+            GridSaveChange()
+
+        End If
 
     End Sub
 
