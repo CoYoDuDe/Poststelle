@@ -155,7 +155,7 @@ Module DataGridViewPrinter
 
                     ' Draw Header
 
-                    Dim newimage As Image = My.Resources.logo_groß
+                    Dim newimage As Image = My.Resources.logo
 
                     If Form1.ste = "%" Then
 
@@ -163,7 +163,7 @@ Module DataGridViewPrinter
 
                     End If
 
-                    e.Graphics.DrawImage(newimage, 25, 0, 300, 27)
+                    e.Graphics.DrawImage(newimage, 25, 0, 150, 40)
                     e.Graphics.DrawString("WE Für " + Form1.ste, New Font("Arial", 22, FontStyle.Bold), Brushes.Black, New Point(500, 0))
                     'e.Graphics.DrawString(Header, New Font(DataGridViewToPrint.Font, FontStyle.Bold), Brushes.Black, e.MarginBounds.Left, e.MarginBounds.Top - e.Graphics.MeasureString(Header, New Font(DataGridViewToPrint.Font, FontStyle.Bold), e.MarginBounds.Width).Height - 13)
 
