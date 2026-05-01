@@ -1,3 +1,5 @@
+Option Strict On
+
 Imports System.Data
 Imports System.Data.SQLite
 Imports System.IO
@@ -116,7 +118,7 @@ Public Class SettingsRepository
             connection.Open()
 
             Using command As New SQLiteCommand("INSERT INTO Einstellungen (AutodbBackup, AutodbBackupTime, AutodbBackupPfad) VALUES (0, 30, @AutodbBackupPfad)", connection)
-                command.Parameters.AddWithValue("@AutodbBackupPfad", "PoststelleBackup.db")
+                AddTextParameter(command, "@AutodbBackupPfad", "PoststelleBackup.db")
                 command.ExecuteNonQuery()
             End Using
         End Using
@@ -129,7 +131,7 @@ Public Class SettingsRepository
             connection.Open()
 
             Using command As New SQLiteCommand("SELECT ID, AutodbBackup, AutodbBackupTime, AutodbBackupPfad FROM Einstellungen WHERE ID = @Id", connection)
-                command.Parameters.AddWithValue("@Id", id)
+                AddIntegerParameter(command, "@Id", id)
 
                 Using reader As SQLiteDataReader = command.ExecuteReader()
                     If reader.Read() Then
@@ -154,10 +156,10 @@ Public Class SettingsRepository
             connection.Open()
 
             Using command As New SQLiteCommand("UPDATE Einstellungen SET AutodbBackup = @AutodbBackup, AutodbBackupTime = @AutodbBackupTime, AutodbBackupPfad = @AutodbBackupPfad WHERE ID = @Id", connection)
-                command.Parameters.AddWithValue("@AutodbBackup", If(settings.AutoDbBackupEnabled, 1, 0))
-                command.Parameters.AddWithValue("@AutodbBackupTime", settings.AutoDbBackupTime)
-                command.Parameters.AddWithValue("@AutodbBackupPfad", settings.AutoDbBackupPath)
-                command.Parameters.AddWithValue("@Id", settings.Id)
+                AddIntegerParameter(command, "@AutodbBackup", If(settings.AutoDbBackupEnabled, 1, 0))
+                AddIntegerParameter(command, "@AutodbBackupTime", settings.AutoDbBackupTime)
+                AddTextParameter(command, "@AutodbBackupPfad", settings.AutoDbBackupPath)
+                AddIntegerParameter(command, "@Id", settings.Id)
                 command.ExecuteNonQuery()
             End Using
         End Using
@@ -201,7 +203,7 @@ Public Class RecipientRepository
             connection.Open()
 
             Using command As New SQLiteCommand("SELECT ID, Name, Abladestelle, Mandant FROM Empfaenger WHERE Name = @Name", connection)
-                command.Parameters.AddWithValue("@Name", name)
+                AddTextParameter(command, "@Name", name)
 
                 Using reader As SQLiteDataReader = command.ExecuteReader()
                     If reader.Read() Then
@@ -226,9 +228,9 @@ Public Class RecipientRepository
             connection.Open()
 
             Using command As New SQLiteCommand("INSERT OR REPLACE INTO Empfaenger (Name, Abladestelle, Mandant) VALUES (@Name, @Abladestelle, @Mandant)", connection)
-                command.Parameters.AddWithValue("@Name", recipient.Name)
-                command.Parameters.AddWithValue("@Abladestelle", recipient.Abladestelle)
-                command.Parameters.AddWithValue("@Mandant", recipient.Mandant)
+                AddTextParameter(command, "@Name", recipient.Name)
+                AddTextParameter(command, "@Abladestelle", recipient.Abladestelle)
+                AddTextParameter(command, "@Mandant", recipient.Mandant)
                 command.ExecuteNonQuery()
             End Using
         End Using
@@ -239,9 +241,9 @@ Public Class RecipientRepository
 
         Using connection As New SQLiteConnection(DatabaseConfig.SharedConnectionString)
             Using command As New SQLiteCommand("SELECT * FROM Empfaenger WHERE Name LIKE @Name AND Abladestelle LIKE @Abladestelle AND Mandant LIKE @Mandant", connection)
-                command.Parameters.AddWithValue("@Name", filter.Name)
-                command.Parameters.AddWithValue("@Abladestelle", filter.Abladestelle)
-                command.Parameters.AddWithValue("@Mandant", filter.Mandant)
+                AddTextParameter(command, "@Name", filter.Name)
+                AddTextParameter(command, "@Abladestelle", filter.Abladestelle)
+                AddTextParameter(command, "@Mandant", filter.Mandant)
 
                 Using adapter As New SQLiteDataAdapter(command)
                     Dim table As New DataTable()
@@ -305,7 +307,7 @@ Public Class PackageRepository
             connection.Open()
 
             Using command As New SQLiteCommand("SELECT DISTINCT Mandant FROM Packete WHERE Datum = @Datum", connection)
-                command.Parameters.AddWithValue("@Datum", datum)
+                AddTextParameter(command, "@Datum", datum)
 
                 Using reader As SQLiteDataReader = command.ExecuteReader()
                     Do While reader.Read()
@@ -325,14 +327,14 @@ Public Class PackageRepository
             connection.Open()
 
             Using command As New SQLiteCommand("INSERT INTO Packete (Mandant, Datum, Abladestelle, Sender, SendungsNummer, Empfaenger, Unterschrift, Gedruckt) VALUES (@Mandant, @Datum, @Abladestelle, @Sender, @SendungsNummer, @Empfaenger, @Unterschrift, @Gedruckt)", connection)
-                command.Parameters.AddWithValue("@Mandant", packageRecord.Mandant)
-                command.Parameters.AddWithValue("@Datum", packageRecord.Datum)
-                command.Parameters.AddWithValue("@Abladestelle", packageRecord.Abladestelle)
-                command.Parameters.AddWithValue("@Sender", packageRecord.Sender)
-                command.Parameters.AddWithValue("@SendungsNummer", packageRecord.SendungsNummer)
-                command.Parameters.AddWithValue("@Empfaenger", packageRecord.Empfaenger)
-                command.Parameters.AddWithValue("@Unterschrift", packageRecord.Unterschrift)
-                command.Parameters.AddWithValue("@Gedruckt", packageRecord.Gedruckt)
+                AddTextParameter(command, "@Mandant", packageRecord.Mandant)
+                AddTextParameter(command, "@Datum", packageRecord.Datum)
+                AddTextParameter(command, "@Abladestelle", packageRecord.Abladestelle)
+                AddTextParameter(command, "@Sender", packageRecord.Sender)
+                AddTextParameter(command, "@SendungsNummer", packageRecord.SendungsNummer)
+                AddTextParameter(command, "@Empfaenger", packageRecord.Empfaenger)
+                AddTextParameter(command, "@Unterschrift", packageRecord.Unterschrift)
+                AddTextParameter(command, "@Gedruckt", packageRecord.Gedruckt)
                 command.ExecuteNonQuery()
             End Using
         End Using
@@ -345,13 +347,13 @@ Public Class PackageRepository
             connection.Open()
 
             Using command As New SQLiteCommand("UPDATE Packete SET Gedruckt = @GedrucktNeu WHERE Datum LIKE @Datum AND Mandant LIKE @Mandant AND Sender LIKE @Sender AND SendungsNummer Like @SendungsNummer AND Empfaenger LIKE @Empfaenger AND Gedruckt LIKE @Gedruckt", connection)
-                command.Parameters.AddWithValue("@GedrucktNeu", "1")
-                command.Parameters.AddWithValue("@Datum", filter.Datum)
-                command.Parameters.AddWithValue("@Mandant", filter.Mandant)
-                command.Parameters.AddWithValue("@Sender", filter.Sender)
-                command.Parameters.AddWithValue("@SendungsNummer", filter.SendungsNummer)
-                command.Parameters.AddWithValue("@Empfaenger", filter.Empfaenger)
-                command.Parameters.AddWithValue("@Gedruckt", filter.Gedruckt)
+                AddTextParameter(command, "@GedrucktNeu", "1")
+                AddTextParameter(command, "@Datum", filter.Datum)
+                AddTextParameter(command, "@Mandant", filter.Mandant)
+                AddTextParameter(command, "@Sender", filter.Sender)
+                AddTextParameter(command, "@SendungsNummer", filter.SendungsNummer)
+                AddTextParameter(command, "@Empfaenger", filter.Empfaenger)
+                AddTextParameter(command, "@Gedruckt", filter.Gedruckt)
                 command.ExecuteNonQuery()
             End Using
         End Using
@@ -362,12 +364,12 @@ Public Class PackageRepository
 
         Using connection As New SQLiteConnection(DatabaseConfig.SharedConnectionString)
             Using command As New SQLiteCommand("SELECT * FROM Packete WHERE Datum LIKE @Datum AND Mandant LIKE @Mandant AND Sender LIKE @Sender AND SendungsNummer Like @SendungsNummer AND Empfaenger LIKE @Empfaenger AND Gedruckt LIKE @Gedruckt", connection)
-                command.Parameters.AddWithValue("@Datum", filter.Datum)
-                command.Parameters.AddWithValue("@Mandant", filter.Mandant)
-                command.Parameters.AddWithValue("@Sender", filter.Sender)
-                command.Parameters.AddWithValue("@SendungsNummer", filter.SendungsNummer)
-                command.Parameters.AddWithValue("@Empfaenger", filter.Empfaenger)
-                command.Parameters.AddWithValue("@Gedruckt", filter.Gedruckt)
+                AddTextParameter(command, "@Datum", filter.Datum)
+                AddTextParameter(command, "@Mandant", filter.Mandant)
+                AddTextParameter(command, "@Sender", filter.Sender)
+                AddTextParameter(command, "@SendungsNummer", filter.SendungsNummer)
+                AddTextParameter(command, "@Empfaenger", filter.Empfaenger)
+                AddTextParameter(command, "@Gedruckt", filter.Gedruckt)
 
                 Using adapter As New SQLiteDataAdapter(command)
                     Dim table As New DataTable()

@@ -1,6 +1,7 @@
 Public Class Form2
 
     Private ReadOnly settingsRepository As New SettingsRepository()
+    Private ReadOnly settingsFormService As New SettingsFormService()
 
     Dim drag As Boolean
     Dim mousex As Integer
@@ -88,9 +89,12 @@ Public Class Form2
 
     Private Sub SpeichernButton_Click(sender As Object, e As EventArgs) Handles SpeichernButton.Click
 
-        If MinutenTB.Text = "Minuten" OrElse MinutenTB.Text = "" OrElse FilePatchTB.Text = "FilePatch" OrElse FilePatchTB.Text = "" Then
+        Dim backupMinutes As Integer
+        Dim validationMessage As String = String.Empty
 
-            MsgBox("Bitte alle Felder ausfüllen! ;-)")
+        If Not settingsFormService.ValidateBackupSettings(MinutenTB.Text, FilePatchTB.Text, backupMinutes, validationMessage) Then
+
+            MsgBox(validationMessage)
             Exit Sub
 
         End If
@@ -98,30 +102,30 @@ Public Class Form2
         If EinschaltenCB.Checked = True Then
 
             AutodbBak = 1
-            Sprung()
+            Sprung(backupMinutes)
 
         ElseIf EinschaltenCB.Checked = False Then
 
             AutodbBak = 0
             Form1.Timer1.Enabled = False
-            Sprung()
+            Sprung(backupMinutes)
 
         End If
 
     End Sub
 
-    Private Sub Sprung()
+    Private Sub Sprung(backupMinutes As Integer)
 
         Try
 
             settingsRepository.UpdateSettings(New SettingsRecord With {
                 .Id = 1,
                 .AutoDbBackupEnabled = (AutodbBak = 1),
-                .AutoDbBackupTime = Convert.ToInt32(MinutenTB.Text),
+                .AutoDbBackupTime = backupMinutes,
                 .AutoDbBackupPath = FilePatchTB.Text
             })
 
-            MsgBox("Einstellungen Wurden Gespeichert! ;-)")
+            MsgBox("Einstellungen wurden gespeichert! ;-)")
             Form1.AutodbBackupEX()
         Catch ex As Exception
 

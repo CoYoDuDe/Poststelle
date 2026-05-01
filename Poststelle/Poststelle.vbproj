@@ -105,6 +105,7 @@
     <Compile Include="EnhancedPrintPreviewDialog.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="SQLiteHelpers.vb" />
     <Compile Include="Form1.Designer.vb">
       <DependentUpon>Form1.vb</DependentUpon>
     </Compile>

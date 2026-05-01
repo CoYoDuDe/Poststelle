@@ -1,3 +1,5 @@
+Option Strict On
+
 Public Module UiText
 
     Public Const SenderPlaceholder As String = "Sender"
@@ -166,6 +168,37 @@ Public Class RecipientFormService
     Private Function IsPlaceholderOrEmpty(text As String, placeholder As String) As Boolean
 
         Return String.IsNullOrWhiteSpace(text) OrElse String.Equals(text, placeholder, StringComparison.Ordinal)
+
+    End Function
+
+End Class
+
+Public Class SettingsFormService
+
+    Public Function ValidateBackupSettings(minutesText As String,
+                                           backupPath As String,
+                                           ByRef backupMinutes As Integer,
+                                           ByRef validationMessage As String) As Boolean
+
+        If String.IsNullOrWhiteSpace(minutesText) OrElse
+           String.Equals(minutesText, "Minuten", StringComparison.Ordinal) OrElse
+           String.IsNullOrWhiteSpace(backupPath) OrElse
+           String.Equals(backupPath, "FilePatch", StringComparison.Ordinal) Then
+
+            validationMessage = "Bitte alle Felder ausfuellen! ;-)"
+            Return False
+
+        End If
+
+        If Not Integer.TryParse(minutesText, backupMinutes) OrElse backupMinutes <= 0 Then
+
+            validationMessage = "Bitte eine gueltige Anzahl Minuten eingeben! ;-)"
+            Return False
+
+        End If
+
+        validationMessage = String.Empty
+        Return True
 
     End Function
 
