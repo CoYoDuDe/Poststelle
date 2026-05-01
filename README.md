@@ -30,6 +30,23 @@ Zum Bauen wird aktuell eine Windows-Umgebung mit Visual Studio 2017 oder neuer b
 
 NuGet-Abhaengigkeiten liegen im klassischen `packages`-Format vor. Vor dem ersten Build sollte eine Paket-Wiederherstellung ausgefuehrt werden.
 
+## Linux-Status
+
+Eine partielle Build-Pruefung unter Debian 12 mit Mono wurde getestet.
+
+- `mono-devel` und `xbuild` lassen sich installieren
+- Ressourcen, Projektdatei und Referenzen werden verarbeitet
+- der eigentliche VB.NET-Compile-Schritt scheitert unter Debian-Mono, weil Mono hier keinen funktionierenden Visual-Basic-Compiler (`vbnc.exe`) mehr mitliefert
+
+Das bedeutet: Linux ist fuer statische Analyse, Refactoring und Projektpflege brauchbar, aber fuer einen verlaesslichen Release-Build dieses alten VB.NET-WinForms-Projekts aktuell nicht die richtige Zielumgebung.
+
+Wenn die temporaer installierte Linux-Build-Umgebung spaeter wieder entfernt werden soll:
+
+```bash
+apt-get remove -y mono-devel
+apt-get autoremove -y
+```
+
 ## Bekannte technische Schulden
 
 - Windows-only durch klassisches WinForms auf .NET Framework
@@ -46,3 +63,5 @@ Fuer eine spaetere echte Modernisierung ist der sinnvollste naechste Schritt kei
 2. Datenbankzugriffe kapseln und parameterisieren
 3. das Projekt auf ein modernes .NET-Windows-Target heben
 4. erst danach ueber C#-Migration oder komplette Neuentwicklung entscheiden
+
+Kurz gesagt: jetzt sauber in .NET/VB.NET weiter aufraeumen, nicht sofort die Sprache wechseln. Eine C#-Migration ist sinnvoller als spaeterer Schritt, sobald Verhalten, Build und Datenzugriff stabilisiert sind.
