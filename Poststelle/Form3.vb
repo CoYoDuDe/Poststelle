@@ -1,10 +1,7 @@
-﻿Imports System.IO
-Imports System.Data.SQLite
-
 Public Class Form3
 
-    Dim con As New SQLiteConnection("Data Source=Poststelle.db")
-    Dim connectionString As String = "FullUri=file:Poststelle.db?cache=shared"
+    Private ReadOnly recipientRepository As New RecipientRepository()
+
     Dim myBindingSource As New BindingSource
     Dim myData As New DataTable
 
@@ -21,8 +18,8 @@ Public Class Form3
     Private Sub Form3_MouseDown(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs) Handles MyBase.MouseDown, MenuStrip1.MouseDown
 
         drag = True
-        mousex = Windows.Forms.Cursor.Position.X - Me.Left
-        mousey = Windows.Forms.Cursor.Position.Y - Me.Top
+        mousex = System.Windows.Forms.Cursor.Position.X - Me.Left
+        mousey = System.Windows.Forms.Cursor.Position.Y - Me.Top
 
     End Sub
 
@@ -30,8 +27,8 @@ Public Class Form3
 
         If drag Then
 
-            Me.Top = Windows.Forms.Cursor.Position.Y - mousey
-            Me.Left = Windows.Forms.Cursor.Position.X - mousex
+            Me.Top = System.Windows.Forms.Cursor.Position.Y - mousey
+            Me.Left = System.Windows.Forms.Cursor.Position.X - mousex
 
         End If
 
@@ -49,7 +46,6 @@ Public Class Form3
 
     End Sub
 
-
     Private Sub Form3_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
         NameCBFuellen()
@@ -59,13 +55,11 @@ Public Class Form3
 
     End Sub
 
-
     Private Sub X_Click(sender As Object, e As EventArgs) Handles x.Click
 
         Me.Close()
 
     End Sub
-
 
     Private Sub SchließenButton_Click(sender As Object, e As EventArgs) Handles SchließenButton.Click
 
@@ -73,15 +67,11 @@ Public Class Form3
 
     End Sub
 
-
     Private Sub SpeichernButton_Click(sender As Object, e As EventArgs) Handles SpeichernButton.Click
 
         Dim Name As String = NameCB.Text
         Dim Abladestelle As String = AbladestelleCB.Text
         Dim Mandant As String = MandantCB.Text
-
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
 
         If NameCB.Text = "" Or AbladestelleCB.Text = "" Or MandantCB.Text = "" Or NameCB.Text = "Name" Or AbladestelleCB.Text = "Abladestelle" Or MandantCB.Text = "Mandant" Then
 
@@ -93,61 +83,40 @@ Public Class Form3
 
         Else
 
-            con.Open()
+            Try
 
-            If con.State = ConnectionState.Open Then
+                recipientRepository.Upsert(New RecipientRecord With {
+                    .Name = Name,
+                    .Abladestelle = Abladestelle,
+                    .Mandant = Mandant
+                })
 
-                Try
+                MsgBox("Empfänger würde geändert/angelegt! ;-)")
 
-                    com = New SQLiteCommand("INSERT OR REPLACE INTO Empfaenger
-                (
-                Name,
-                Abladestelle,
-                Mandant
-                )
-                    VALUES
-                    (
-                    @Name,
-                    @Abladestelle,
-                    @Mandant
-                    )", con)
-                    com.Parameters.AddWithValue("@Name", Name)
-                    com.Parameters.AddWithValue("@Abladestelle", Abladestelle)
-                    com.Parameters.AddWithValue("@Mandant", Mandant)
+                NameCB.Items.Clear()
+                AbladestelleCB.Items.Clear()
+                MandantCB.Items.Clear()
 
-                    com.ExecuteNonQuery()
-                    con.Close()
+                AbladestelleCBFuellen()
+                MandantCBFuellen()
+                NameCBFuellen()
+                UpdGrid()
+                Form1.EmpfaengerCBFuellen()
 
-                    MsgBox("Empfänger würde geändert/angelegt! ;-)")
+                NameCB.Text = "Name"
+                AbladestelleCB.Text = "Abladestelle"
+                MandantCB.Text = "Mandant"
 
-                    NameCB.Items.Clear()
-                    AbladestelleCB.Items.Clear()
-                    MandantCB.Items.Clear()
+                SchließenButton.Focus()
+            Catch ex As Exception
 
-                    AbladestelleCBFuellen()
-                    MandantCBFuellen()
-                    NameCBFuellen()
-                    UpdGrid()
-                    Form1.EmpfaengerCBFuellen()
+                MsgBox("Fehler:" & ex.Message)
 
-                    NameCB.Text = "Name"
-                    AbladestelleCB.Text = "Abladestelle"
-                    MandantCB.Text = "Mandant"
-
-                    SchließenButton.Focus()
-
-                Catch ex As Exception
-
-                    MsgBox("Fehler:" & ex.Message)
-
-                End Try
-
-            End If
+            End Try
 
         End If
 
     End Sub
-
 
     Private Sub NameCB_keydown(sender As System.Object, e As System.Windows.Forms.KeyEventArgs) Handles NameCB.KeyDown
 
@@ -186,46 +155,11 @@ Public Class Form3
 
     End Sub
 
-    Private Sub LoadDistinctValues(target As ComboBox, query As String, columnName As String)
-
-        Dim com As New SQLiteCommand(query, con)
-        Dim rd As SQLiteDataReader
-
-        target.Items.Clear()
-        con.Open()
-
-        If con.State = ConnectionState.Open Then
-
-            Try
-
-                rd = com.ExecuteReader
-
-                Do While rd.Read()
-
-                    target.Items.Add(rd(columnName))
-
-                Loop
-
-                rd.Close()
-                con.Close()
-                com.Dispose()
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
-
-    End Sub
-
     Private Sub NameCBFuellen()
 
-        LoadDistinctValues(NameCB, "SELECT DISTINCT Name FROM Empfaenger", "Name")
+        PopulateComboBox(NameCB, recipientRepository.GetDistinctNames())
 
     End Sub
-
 
     Private Sub AbladestelleCB_keydown(sender As System.Object, e As System.Windows.Forms.KeyEventArgs) Handles AbladestelleCB.KeyDown
 
@@ -266,10 +200,9 @@ Public Class Form3
 
     Private Sub AbladestelleCBFuellen()
 
-        LoadDistinctValues(AbladestelleCB, "SELECT DISTINCT Abladestelle FROM Empfaenger", "Abladestelle")
+        PopulateComboBox(AbladestelleCB, recipientRepository.GetDistinctAbladestellen())
 
     End Sub
-
 
     Private Sub MandantCB_KeyDown(sender As Object, e As KeyEventArgs) Handles MandantCB.KeyDown
 
@@ -309,10 +242,9 @@ Public Class Form3
 
     Private Sub MandantCBFuellen()
 
-        LoadDistinctValues(MandantCB, "SELECT DISTINCT Mandant FROM Empfaenger", "Mandant")
+        PopulateComboBox(MandantCB, recipientRepository.GetDistinctMandants())
 
     End Sub
-
 
     Private Sub EmpfaengerFuellen()
 
@@ -346,16 +278,13 @@ Public Class Form3
 
         End If
 
-        Dim selectConnection As New SQLiteConnection(connectionString)
-        Dim selectCommand As New SQLiteCommand("SELECT * FROM Empfaenger WHERE Name LIKE @Name AND Abladestelle LIKE @Abladestelle AND Mandant LIKE @Mandant", selectConnection)
-        selectCommand.Parameters.AddWithValue("@Name", NME)
-        selectCommand.Parameters.AddWithValue("@Abladestelle", ABL)
-        selectCommand.Parameters.AddWithValue("@Mandant", MDT)
-        Dim myAdapter As New SQLite.SQLiteDataAdapter(selectCommand)
-
         Try
 
-            myAdapter.Fill(myData)
+            myData = recipientRepository.Search(New RecipientFilter With {
+                .Name = NME,
+                .Abladestelle = ABL,
+                .Mandant = MDT
+            })
             myBindingSource.DataSource = myData
 
             DataGridView1.DataSource = myBindingSource
@@ -376,7 +305,6 @@ Public Class Form3
 
     End Sub
 
-
     Private Sub CellValueChanged(ByVal sender As Object, ByVal e As DataGridViewCellEventArgs) Handles DataGridView1.CellValueChanged
 
         GridSaveChange()
@@ -387,11 +315,8 @@ Public Class Form3
 
         Try
 
-            Dim myAdapter As New SQLite.SQLiteDataAdapter("SELECT * FROM  Empfaenger", connectionString)
-            Dim cb As New SQLite.SQLiteCommandBuilder(myAdapter)
-
             myBindingSource.EndEdit()
-            myAdapter.Update(myData)
+            recipientRepository.SaveChanges(myData)
 
             Form1.EmpfaengerCBFuellen()
 
@@ -405,20 +330,20 @@ Public Class Form3
 
     Private Sub UpdGrid()
 
-        If DataGridView1.Rows.Count = 0 Then
-
-            EmpfaengerFuellen()
-
-        Else
-
-            myData.Clear()
-            EmpfaengerFuellen()
-
-        End If
+        EmpfaengerFuellen()
 
     End Sub
 
+    Private Sub PopulateComboBox(target As ComboBox, values As IEnumerable(Of String))
 
-    '----
+        target.Items.Clear()
+
+        For Each value As String In values
+
+            target.Items.Add(value)
+
+        Next
+
+    End Sub
 
 End Class

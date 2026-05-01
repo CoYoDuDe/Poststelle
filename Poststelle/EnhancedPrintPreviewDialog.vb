@@ -54,7 +54,7 @@
         End With
 
         'If the user clicked OK, print the document.
-        If dlgPrint.ShowDialog = Windows.Forms.DialogResult.OK Then
+        If dlgPrint.ShowDialog = System.Windows.Forms.DialogResult.OK Then
             Me.Document.Print()
         End If
 

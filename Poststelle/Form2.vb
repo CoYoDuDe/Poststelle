@@ -1,8 +1,6 @@
-﻿Imports System.Data.SQLite
-
 Public Class Form2
 
-    Dim con As New SQLiteConnection("Data Source=Poststelle.db")
+    Private ReadOnly settingsRepository As New SettingsRepository()
 
     Dim drag As Boolean
     Dim mousex As Integer
@@ -15,8 +13,8 @@ Public Class Form2
     Private Sub Form2_MouseDown(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs) Handles MyBase.MouseDown, MenuStrip1.MouseDown
 
         drag = True
-        mousex = Windows.Forms.Cursor.Position.X - Me.Left
-        mousey = Windows.Forms.Cursor.Position.Y - Me.Top
+        mousex = System.Windows.Forms.Cursor.Position.X - Me.Left
+        mousey = System.Windows.Forms.Cursor.Position.Y - Me.Top
 
     End Sub
 
@@ -24,8 +22,8 @@ Public Class Form2
 
         If drag Then
 
-            Me.Top = Windows.Forms.Cursor.Position.Y - mousey
-            Me.Left = Windows.Forms.Cursor.Position.X - mousex
+            Me.Top = System.Windows.Forms.Cursor.Position.Y - mousey
+            Me.Left = System.Windows.Forms.Cursor.Position.X - mousex
 
         End If
 
@@ -43,49 +41,28 @@ Public Class Form2
 
     End Sub
 
-
     Private Sub Form2_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
-        Dim rd As SQLiteDataReader
+        Try
 
-        con.Open()
+            Dim settings = settingsRepository.GetSettings(1)
 
-        If con.State = ConnectionState.Open Then
+            If settings Is Nothing Then
 
-            Try
+                Exit Sub
 
-                com = New SQLiteCommand("SELECT * FROM Einstellungen WHERE ID = @Id", con)
-                com.Parameters.AddWithValue("@Id", 1)
+            End If
 
-                rd = com.ExecuteReader
+            EinschaltenCB.Checked = settings.AutoDbBackupEnabled
+            MinutenTB.Text = settings.AutoDbBackupTime.ToString()
+            FilePatchTB.Text = settings.AutoDbBackupPath
+        Catch ex As Exception
 
-                rd.Read()
+            MsgBox("Fehler:" & ex.Message)
 
-                If (rd("AutodbBackup")) = "1" Then
-
-                    EinschaltenCB.Checked = True
-
-                End If
-
-                MinutenTB.Text = (rd("AutodbBackupTime"))
-                FilePatchTB.Text = (rd("AutodbBackupPfad"))
-
-                rd.Close()
-                con.Close()
-                com.Dispose()
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        End Try
 
     End Sub
-
 
     Private Sub X_Click(sender As Object, e As EventArgs) Handles x.Click
 
@@ -93,10 +70,9 @@ Public Class Form2
 
     End Sub
 
-
     Private Sub FilePatchTB_Click(sender As Object, e As EventArgs) Handles FilePatchTB.Click
 
-        If SaveFileDialog1.ShowDialog() = Windows.Forms.DialogResult.OK Then
+        If SaveFileDialog1.ShowDialog() = System.Windows.Forms.DialogResult.OK Then
 
             FilePatchTB.Text = SaveFileDialog1.FileName
 
@@ -104,13 +80,11 @@ Public Class Form2
 
     End Sub
 
-
     Private Sub SchließenButton_Click(sender As Object, e As EventArgs) Handles SchließenButton.Click
 
         Me.Close()
 
     End Sub
-
 
     Private Sub SpeichernButton_Click(sender As Object, e As EventArgs) Handles SpeichernButton.Click
 
@@ -136,49 +110,25 @@ Public Class Form2
 
     End Sub
 
-
     Private Sub Sprung()
 
-        Dim AutodbBakTim As String = MinutenTB.Text
-        Dim AutodbBakPf As String = FilePatchTB.Text
+        Try
 
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
+            settingsRepository.UpdateSettings(New SettingsRecord With {
+                .Id = 1,
+                .AutoDbBackupEnabled = (AutodbBak = 1),
+                .AutoDbBackupTime = Convert.ToInt32(MinutenTB.Text),
+                .AutoDbBackupPath = FilePatchTB.Text
+            })
 
-        con.Open()
+            MsgBox("Einstellungen Wurden Gespeichert! ;-)")
+            Form1.AutodbBackupEX()
+        Catch ex As Exception
 
-        If con.State = ConnectionState.Open Then
+            MsgBox("Fehler:" & ex.Message)
 
-            Try
-
-                com = New SQLiteCommand(
-                                         "UPDATE Einstellungen SET 
-                                         AutodbBackup = @AutodbBackup,
-                                         AutodbBackupTime = @AutodbBackupTime,
-                                         AutodbBackupPfad = @AutodbBackupPfad
-                                         WHERE ID = @Id", con)
-                com.Parameters.AddWithValue("@AutodbBackup", AutodbBak)
-                com.Parameters.AddWithValue("@AutodbBackupTime", AutodbBakTim)
-                com.Parameters.AddWithValue("@AutodbBackupPfad", AutodbBakPf)
-                com.Parameters.AddWithValue("@Id", 1)
-
-                com.ExecuteNonQuery()
-                con.Close()
-
-                MsgBox("Einstellungen Wurden Gespeichert! ;-)")
-                Form1.AutodbBackupEX()
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        End Try
 
     End Sub
-
-
-    '----
 
 End Class

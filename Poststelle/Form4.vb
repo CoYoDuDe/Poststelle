@@ -10,8 +10,8 @@
     Private Sub Form4_MouseDown(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs) Handles MyBase.MouseDown, MenuStrip1.MouseDown
 
         drag = True
-        mousex = Windows.Forms.Cursor.Position.X - Me.Left
-        mousey = Windows.Forms.Cursor.Position.Y - Me.Top
+        mousex = System.Windows.Forms.Cursor.Position.X - Me.Left
+        mousey = System.Windows.Forms.Cursor.Position.Y - Me.Top
 
     End Sub
 
@@ -19,8 +19,8 @@
 
         If drag Then
 
-            Me.Top = Windows.Forms.Cursor.Position.Y - mousey
-            Me.Left = Windows.Forms.Cursor.Position.X - mousex
+            Me.Top = System.Windows.Forms.Cursor.Position.Y - mousey
+            Me.Left = System.Windows.Forms.Cursor.Position.X - mousex
 
         End If
 

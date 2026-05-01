@@ -1,15 +1,15 @@
-﻿Imports System.Data.SQLite
-Imports System.IO
 Imports System.Drawing
 Imports System.Drawing.Printing
+Imports System.IO
 
 Public Class Form1
 
-    Dim con As New SQLiteConnection("Data Source=Poststelle.db")
-    Dim connectionString As String = "FullUri=file:Poststelle.db?cache=shared"
+    Private ReadOnly settingsRepository As New SettingsRepository()
+    Private ReadOnly recipientRepository As New RecipientRepository()
+    Private ReadOnly packageRepository As New PackageRepository()
+
     Dim myBindingSource As New BindingSource
     Dim myData As New DataTable
-    Dim myAdapter As New SQLiteDataAdapter
 
     Dim drag As Boolean
     Dim mousex As Integer
@@ -21,8 +21,6 @@ Public Class Form1
     Dim Abl As String
     Dim SendNr As String
     Dim Mand As String
-
-
     Dim Gedruckt As String
 
     Public ste As String
@@ -34,8 +32,8 @@ Public Class Form1
     Private Sub Form1_MouseDown(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs) Handles MyBase.MouseDown, MenuStrip1.MouseDown
 
         drag = True
-        mousex = Windows.Forms.Cursor.Position.X - Me.Left
-        mousey = Windows.Forms.Cursor.Position.Y - Me.Top
+        mousex = System.Windows.Forms.Cursor.Position.X - Me.Left
+        mousey = System.Windows.Forms.Cursor.Position.Y - Me.Top
 
     End Sub
 
@@ -43,8 +41,8 @@ Public Class Form1
 
         If drag Then
 
-            Me.Top = Windows.Forms.Cursor.Position.Y - mousey
-            Me.Left = Windows.Forms.Cursor.Position.X - mousex
+            Me.Top = System.Windows.Forms.Cursor.Position.Y - mousey
+            Me.Left = System.Windows.Forms.Cursor.Position.X - mousex
 
         End If
 
@@ -60,7 +58,7 @@ Public Class Form1
 
         If Me.WindowState <> FormWindowState.Maximized Then
 
-            If e.Button = Windows.Forms.MouseButtons.Left Then
+            If e.Button = System.Windows.Forms.MouseButtons.Left Then
 
                 Me.Capture = False
                 Dim theCursor As Cursor = Cursors.Arrow
@@ -97,51 +95,16 @@ Public Class Form1
 
     End Sub
 
-    'Private Sub SS_MouseMove(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs) Handles SS.MouseMove
-
-    'If Me.WindowState <> FormWindowState.Maximized Then
-
-    'If e.X = SS.Width - 1 Or e.X = SS.Width - 2 Or e.X = SS.Width - 3 Or e.X = SS.Width - 4 Or e.X = SS.Width - 5 Then
-
-    'Dim theCursor As Cursor = Cursors.Arrow
-
-    'Select Case e.X
-
-    'Case SS.Width - 5 To SS.Width - 1
-
-    'Select Case e.Y
-
-    'Case SS.Height - 5 To SS.Height - 1
-    'theCursor = Cursors.PanNW
-
-    'End Select
-
-    'End Select
-
-    'Me.Cursor = theCursor
-
-    'End If
-
-    'End If
-
-    'End Sub
-
-    'Private Sub SS_MouseUp(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs) Handles SS.MouseUp
-
-    'Me.Cursor = Cursors.Arrow
-
-    'End Sub
-
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
         Me.SS.SizingGrip = False
 
-        If System.IO.File.Exists("Poststelle.db") Then
+        If settingsRepository.DatabaseExists() Then
 
             EmpfaengerCBFuellen()
             SenderCBFuellen()
-            SeitenFuellen()
             GenSeite()
+            UpdGrid()
             AutodbBackupEX()
 
         Else
@@ -154,10 +117,7 @@ Public Class Form1
 
     Private Sub Dbersstellen()
 
-        Dim connect As New SQLite.SQLiteConnection() With {.ConnectionString = "Data Source=Poststelle.db;"}
-
-        connect.Open()
-        connect.Close()
+        settingsRepository.CreateDatabase()
 
         MsgBox("erster Start Datenbank wird erstellt!... ;-)")
 
@@ -167,51 +127,7 @@ Public Class Form1
 
     Private Sub DBStrukturerstellen()
 
-        Dim con As New SQLite.SQLiteConnection()
-        Dim com As SQLiteCommand
-        Dim com0 As SQLiteCommand
-        Dim com1 As SQLiteCommand
-
-        con.ConnectionString = "Data Source=Poststelle.db;"
-        con.Open()
-        con.Close()
-        con.Open()
-        com = con.CreateCommand
-        com.CommandText = "CREATE TABLE Packete (
-	                       ID	INTEGER Not NULL,
-	                       Mandant	TEXT,
-	                       Datum	TEXT,
-	                       Abladestelle	TEXT,
-	                       Sender	TEXT,
-	                       SendungsNummer	TEXT,
-	                       Empfaenger	TEXT,
-                           Unterschrift	TEXT,
-                           Gedruckt	TEXT,
-	                       PRIMARY KEY(ID));"
-
-        com0 = con.CreateCommand
-        com0.CommandText = "CREATE TABLE Empfaenger (
-	                        ID	INTEGER Not NULL,
-	                        Name	TEXT,
-	                        Abladestelle	TEXT,
-	                        Mandant	TEXT,
-	                        PRIMARY KEY(ID));"
-
-        com1 = con.CreateCommand
-        com1.CommandText = "CREATE TABLE Einstellungen (
-	                        ID	INTEGER Not NULL,
-	                        AutodbBackup	TEXT,
-	                        AutodbBackupTime	TEXT,
-	                        AutodbBackupPfad	TEXT,
-	                        PRIMARY KEY(ID));"
-
-        com.ExecuteNonQuery()
-        com.Dispose()
-        com0.ExecuteNonQuery()
-        com0.Dispose()
-        com1.ExecuteNonQuery()
-        com1.Dispose()
-        con.Close()
+        settingsRepository.CreateSchema()
 
         MsgBox("DB Tabellen und Struktur erstellt! ;-)")
 
@@ -221,172 +137,63 @@ Public Class Form1
 
     Private Sub StandardEinstellungen()
 
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
+        Try
 
-        con.Open()
+            settingsRepository.InsertDefaultSettings()
 
-        If con.State = ConnectionState.Open Then
+            MsgBox("Standard Einstellungen Wurden Eingerichtet! ;-)")
 
-            Try
+            EmpfaengerCBFuellen()
+            SenderCBFuellen()
+        Catch ex As Exception
 
-                Dim Patch As String = "PoststelleBackup.db"
+            MsgBox("Fehler:" & ex.Message)
 
-                com = New SQLiteCommand("INSERT INTO Einstellungen
-                (
-                AutodbBackup,
-                AutodbBackupTime,
-                AutodbBackupPfad               
-                )
-                    VALUES
-                    (
-                    0,
-                    30,                    
-                    @AutodbBackupPfad                    
-                    )", con)
-                com.Parameters.AddWithValue("@AutodbBackupPfad", Patch)
-
-                com.ExecuteNonQuery()
-                con.Close()
-
-                MsgBox("Standard Einstellungen Wurden Eingerichtet! ;-)")
-
-                EmpfaengerCBFuellen()
-                SenderCBFuellen()
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
-
-    End Sub
-
-    Private Sub LoadDistinctValues(target As ComboBox, query As String, columnName As String, Optional parameterName As String = Nothing, Optional parameterValue As Object = Nothing)
-
-        Dim com As New SQLiteCommand(query, con)
-        Dim rd As SQLiteDataReader
-
-        If Not target Is SeiteCB Then
-
-            target.Items.Clear()
-
-        End If
-
-        If parameterName IsNot Nothing Then
-
-            com.Parameters.AddWithValue(parameterName, parameterValue)
-
-        End If
-
-        con.Open()
-
-        If con.State = ConnectionState.Open Then
-
-            Try
-
-                rd = com.ExecuteReader
-
-                Do While rd.Read()
-
-                    target.Items.Add(rd(columnName))
-
-                Loop
-
-                rd.Close()
-                con.Close()
-                com.Dispose()
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        End Try
 
     End Sub
 
     Public Sub AutodbBackupEX()
 
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
-        Dim rd As SQLiteDataReader
+        Try
 
-        con.Open()
+            Dim settings = settingsRepository.GetSettings(1)
 
-        If con.State = ConnectionState.Open Then
+            Timer1.Enabled = settings IsNot Nothing AndAlso settings.AutoDbBackupEnabled
 
-            Try
+            If settings IsNot Nothing AndAlso settings.AutoDbBackupEnabled Then
 
-                com = New SQLiteCommand("SELECT * FROM Einstellungen WHERE ID = @Id", con)
-                com.Parameters.AddWithValue("@Id", 1)
+                Timer1.Interval = settings.AutoDbBackupTime * 60000
 
-                rd = com.ExecuteReader
+            End If
+        Catch ex As Exception
 
-                Do While rd.Read()
+            MsgBox("Fehler:" & ex.Message)
 
-                    If (rd("AutodbBackup")) = "1" Then
-
-                        Timer1.Enabled = True
-                        Dim tim As Integer = (rd("AutodbBackupTime"))
-                        Timer1.Interval = tim * 60000
-
-                    End If
-
-                Loop
-
-                rd.Close()
-                con.Close()
-                com.Dispose()
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        End Try
 
     End Sub
 
     Private Sub Timer1_Tick_1(sender As Object, e As EventArgs) Handles Timer1.Tick
 
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
-        Dim rd As SQLiteDataReader
+        Try
 
-        con.Open()
+            Dim settings = settingsRepository.GetSettings(1)
 
-        If con.State = ConnectionState.Open Then
+            If settings Is Nothing Then
 
-            Try
+                Exit Sub
 
-                com = New SQLiteCommand("SELECT * FROM Einstellungen WHERE ID = @Id", con)
-                com.Parameters.AddWithValue("@Id", 1)
+            End If
 
-                rd = com.ExecuteReader
+            My.Computer.FileSystem.CopyFile(DatabaseConfig.DatabaseFilePath, settings.AutoDbBackupPath, overwrite:=True)
+        Catch ex As Exception
 
-                rd.Read()
-                Dim Pat As String = (rd("AutodbBackupPfad"))
+            MsgBox("Fehler:" & ex.Message)
 
-                My.Computer.FileSystem.CopyFile("Poststelle.db", Pat, overwrite:=True)
-
-                rd.Close()
-                con.Close()
-                com.Dispose()
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        End Try
 
     End Sub
-
 
     Private Sub X_Click(sender As Object, e As EventArgs) Handles x.Click
 
@@ -414,7 +221,6 @@ Public Class Form1
 
     End Sub
 
-
     Private Sub EmpfängerToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles EmpfängerToolStripMenuItem.Click
 
         Form3.Show()
@@ -426,7 +232,6 @@ Public Class Form1
         Form2.Show()
 
     End Sub
-
 
     Private Sub SenderCB_keydown(sender As System.Object, e As System.Windows.Forms.KeyEventArgs) Handles SenderCB.KeyDown
 
@@ -460,10 +265,9 @@ Public Class Form1
 
     Private Sub SenderCBFuellen()
 
-        LoadDistinctValues(SenderCB, "SELECT DISTINCT Sender FROM Packete", "Sender")
+        PopulateComboBox(SenderCB, packageRepository.GetDistinctSenders())
 
     End Sub
-
 
     Private Sub EmpfaengerCB_keydown(sender As System.Object, e As System.Windows.Forms.KeyEventArgs) Handles EmpfaengerCB.KeyDown
 
@@ -517,10 +321,9 @@ Public Class Form1
 
     Public Sub EmpfaengerCBFuellen()
 
-        LoadDistinctValues(EmpfaengerCB, "SELECT DISTINCT Name FROM Empfaenger", "Name")
+        PopulateComboBox(EmpfaengerCB, recipientRepository.GetDistinctNames())
 
     End Sub
-
 
     Private Sub SendungsNummerTB_keydown(sender As System.Object, e As System.Windows.Forms.KeyEventArgs) Handles SendungsNummerTB.KeyDown
 
@@ -574,7 +377,6 @@ Public Class Form1
 
     End Sub
 
-
     Private Sub DateTimePicker_ValueChanged(sender As Object, e As EventArgs) Handles DateTimePicker.ValueChanged
 
         SeiteCB.Text = "Seite"
@@ -582,7 +384,6 @@ Public Class Form1
         UpdGrid()
 
     End Sub
-
 
     Private Sub SeiteCB_SelectedIndexChanged(sender As Object, e As EventArgs) Handles SeiteCB.SelectedIndexChanged
 
@@ -598,7 +399,7 @@ Public Class Form1
 
     Private Sub DatumFilterCB_CheckedChanged(sender As Object, e As EventArgs) Handles DatumFilterCB.CheckedChanged
 
-        If System.IO.File.Exists("Poststelle.db") Then
+        If File.Exists(DatabaseConfig.DatabaseFilePath) Then
 
             GenSeite()
 
@@ -611,7 +412,6 @@ Public Class Form1
         End If
 
     End Sub
-
 
     Private Sub DruckenButton_Click(sender As Object, e As EventArgs) Handles DruckenButton.Click
 
@@ -631,93 +431,53 @@ Public Class Form1
 
         DataGridViewPrinter.StartPrint(DataGridView1, False, False, "Poststelle", "Non-BOM Liste")
 
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
+        Try
 
-        con.Open()
+            packageRepository.MarkPrinted(CreateCurrentPackageFilter())
 
-        If con.State = ConnectionState.Open Then
+            UpdGrid()
 
-            Try
+            SenderCB.Text = "Sender"
+            EmpfaengerCB.Text = "Empfänger"
+            SendungsNummerTB.Text = "SendungsNummer"
+        Catch ex As Exception
 
-                com = New SQLiteCommand(
-                                         "UPDATE Packete SET 
-                                         Gedruckt = @GedrucktNeu
-                                          WHERE Datum LIKE @Datum AND Mandant LIKE @Mandant AND Sender LIKE @Sender AND SendungsNummer Like @SendungsNummer AND Empfaenger LIKE @Empfaenger AND Gedruckt LIKE @Gedruckt", con)
-                com.Parameters.AddWithValue("@GedrucktNeu", "1")
-                com.Parameters.AddWithValue("@Datum", DTM)
-                com.Parameters.AddWithValue("@Mandant", ste)
-                com.Parameters.AddWithValue("@Sender", Send)
-                com.Parameters.AddWithValue("@SendungsNummer", SendNr)
-                com.Parameters.AddWithValue("@Empfaenger", Empf)
-                com.Parameters.AddWithValue("@Gedruckt", Gedruckt)
+            MsgBox("Fehler:" & ex.Message)
 
-                com.ExecuteNonQuery()
-                con.Close()
-
-                UpdGrid()
-
-                SenderCB.Text = "Sender"
-                EmpfaengerCB.Text = "Empfänger"
-                SendungsNummerTB.Text = "SendungsNummer"
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        End Try
 
     End Sub
 
     Private Sub EmpfaengerdatenSammeln()
 
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
-        Dim rd As SQLiteDataReader
         Empf = EmpfaengerCB.Text
         DTM = DateTimePicker.Text
         Send = SenderCB.Text
         SendNr = SendungsNummerTB.Text
 
-        con.Open()
+        Try
 
-        If con.State = ConnectionState.Open Then
+            Dim recipient = recipientRepository.FindByName(Empf)
 
-            Try
+            If recipient Is Nothing Then
 
-                com = New SQLiteCommand("SELECT Abladestelle, Mandant FROM Empfaenger WHERE Name = @Name", con)
-                com.Parameters.AddWithValue("@Name", Empf)
+                MsgBox("Empfänger nicht gefunden! ;-)")
+                Exit Sub
 
-                rd = com.ExecuteReader
+            End If
 
-                Do While rd.Read()
+            Abl = recipient.Abladestelle
+            Mand = recipient.Mandant
+            Packeterfassen()
+        Catch ex As Exception
 
-                    Abl = (rd("Abladestelle"))
-                    Mand = (rd("Mandant"))
+            MsgBox("Fehler:" & ex.Message)
 
-                Loop
-
-                rd.Close()
-                con.Close()
-                com.Dispose()
-                Packeterfassen()
-
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        End Try
 
     End Sub
 
     Private Sub Packeterfassen()
-
-        Dim com As New SQLiteCommand
-        Dim adapter As New SQLiteDataAdapter
 
         If SenderCB.Text = "Sender" Or EmpfaengerCB.Text = "Empfänger" Or SendungsNummerTB.Text = "SendungsNummer" Or SenderCB.Text = "" Or EmpfaengerCB.Text = "" Or SendungsNummerTB.Text = "" Then
 
@@ -725,63 +485,32 @@ Public Class Form1
 
         Else
 
-            con.Open()
+            Try
 
-            If con.State = ConnectionState.Open Then
+                packageRepository.Insert(New PackageRecord With {
+                    .Mandant = Mand,
+                    .Datum = DTM,
+                    .Abladestelle = Abl,
+                    .Sender = Send,
+                    .SendungsNummer = SendNr,
+                    .Empfaenger = Empf,
+                    .Unterschrift = "                                                           ",
+                    .Gedruckt = "0"
+                })
 
-                Try
+                SenderCB.Items.Clear()
+                SenderCBFuellen()
+                SenderCB.Focus()
+                SenderCB.Text = "Sender"
+                SenderCB.SelectAll()
+                EmpfaengerCB.Text = "Empfänger"
+                SendungsNummerTB.Text = "SendungsNummer"
+                SeiteWaehlen()
+            Catch ex As Exception
 
-                    com = New SQLiteCommand("INSERT INTO Packete
-                (
-                Mandant,
-                Datum,
-                Abladestelle,
-                Sender,
-                SendungsNummer,
-                Empfaenger,
-                Unterschrift,
-                Gedruckt
-                )
-                    VALUES
-                    (
-                    @Mandant,
-                    @Datum,
-                    @Abladestelle,
-                    @Sender,
-                    @SendungsNummer,
-                    @Empfaenger,
-                    @Unterschrift,
-                    @Gedruckt
+                MsgBox("Fehler:" & ex.Message)
 
-                    )", con)
-                    com.Parameters.AddWithValue("@Mandant", Mand)
-                    com.Parameters.AddWithValue("@Datum", DTM)
-                    com.Parameters.AddWithValue("@Abladestelle", Abl)
-                    com.Parameters.AddWithValue("@Sender", Send)
-                    com.Parameters.AddWithValue("@SendungsNummer", SendNr)
-                    com.Parameters.AddWithValue("@Empfaenger", Empf)
-                    com.Parameters.AddWithValue("@Unterschrift", "                                                           ")
-                    com.Parameters.AddWithValue("@Gedruckt", "0")
-
-                    com.ExecuteNonQuery()
-                    con.Close()
-
-                    SenderCB.Items.Clear()
-                    SenderCBFuellen()
-                    SenderCB.Focus()
-                    SenderCB.Text = "Sender"
-                    SenderCB.SelectAll()
-                    EmpfaengerCB.Text = "Empfänger"
-                    SendungsNummerTB.Text = "SendungsNummer"
-                    SeiteWaehlen()
-
-                Catch ex As Exception
-
-                    MsgBox("Fehler:" & ex.Message)
-
-                End Try
-
-            End If
+            End Try
 
         End If
 
@@ -792,7 +521,7 @@ Public Class Form1
         DTM = DateTimePicker.Text
 
         SeiteCB.Items.Clear()
-        LoadDistinctValues(SeiteCB, "SELECT DISTINCT Mandant FROM Packete WHERE Datum = @Datum", "Mandant", "@Datum", DTM)
+        PopulateComboBox(SeiteCB, packageRepository.GetDistinctMandants(DTM), True)
         SeiteCB.Items.Add("Alle")
         SeiteCB.SelectedItem = Mand
 
@@ -860,19 +589,9 @@ Public Class Form1
 
         End If
 
-        Dim selectConnection As New SQLiteConnection(connectionString)
-        Dim selectCommand As New SQLiteCommand("SELECT * FROM Packete WHERE Datum LIKE @Datum AND Mandant LIKE @Mandant AND Sender LIKE @Sender AND SendungsNummer Like @SendungsNummer AND Empfaenger LIKE @Empfaenger AND Gedruckt LIKE @Gedruckt", selectConnection)
-        selectCommand.Parameters.AddWithValue("@Datum", DTM)
-        selectCommand.Parameters.AddWithValue("@Mandant", ste)
-        selectCommand.Parameters.AddWithValue("@Sender", Send)
-        selectCommand.Parameters.AddWithValue("@SendungsNummer", SendNr)
-        selectCommand.Parameters.AddWithValue("@Empfaenger", Empf)
-        selectCommand.Parameters.AddWithValue("@Gedruckt", Gedruckt)
-        Dim myAdapter As New SQLite.SQLiteDataAdapter(selectCommand)
-
         Try
 
-            myAdapter.Fill(myData)
+            myData = packageRepository.Search(CreateCurrentPackageFilter())
             myBindingSource.DataSource = myData
 
             DataGridView1.DataSource = myBindingSource
@@ -910,11 +629,11 @@ Public Class Form1
 
             DTM = DateTimePicker.Text
 
-            LoadDistinctValues(SeiteCB, "SELECT DISTINCT Mandant FROM Packete WHERE Datum = @Datum", "Mandant", "@Datum", DTM)
+            PopulateComboBox(SeiteCB, packageRepository.GetDistinctMandants(DTM), True)
 
         Else
 
-            LoadDistinctValues(SeiteCB, "SELECT DISTINCT Mandant FROM Packete", "Mandant")
+            PopulateComboBox(SeiteCB, packageRepository.GetDistinctMandants(), True)
 
         End If
 
@@ -932,11 +651,8 @@ Public Class Form1
 
         Try
 
-            Dim myAdapter As New SQLite.SQLiteDataAdapter("SELECT * FROM  Packete", connectionString)
-            Dim cb As New SQLite.SQLiteCommandBuilder(myAdapter)
-
             myBindingSource.EndEdit()
-            myAdapter.Update(myData)
+            packageRepository.SaveChanges(myData)
 
             EmpfaengerCBFuellen()
             SenderCBFuellen()
@@ -951,16 +667,7 @@ Public Class Form1
 
     Private Sub UpdGrid()
 
-        If DataGridView1.Rows.Count = 0 Then
-
-            SeitenFuellen()
-
-        Else
-
-            myData.Clear()
-            SeitenFuellen()
-
-        End If
+        SeitenFuellen()
 
     End Sub
 
@@ -982,7 +689,33 @@ Public Class Form1
 
     End Sub
 
+    Private Sub PopulateComboBox(target As ComboBox, values As IEnumerable(Of String), Optional preserveExistingItems As Boolean = False)
 
-    '----
+        If Not preserveExistingItems Then
+
+            target.Items.Clear()
+
+        End If
+
+        For Each value As String In values
+
+            target.Items.Add(value)
+
+        Next
+
+    End Sub
+
+    Private Function CreateCurrentPackageFilter() As PackageFilter
+
+        Return New PackageFilter With {
+            .Datum = DTM,
+            .Mandant = ste,
+            .Sender = Send,
+            .SendungsNummer = SendNr,
+            .Empfaenger = Empf,
+            .Gedruckt = Gedruckt
+        }
+
+    End Function
 
 End Class
