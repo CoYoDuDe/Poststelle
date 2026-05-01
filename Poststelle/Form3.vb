@@ -217,7 +217,7 @@ Public Class Form3
 
         Catch ex As Exception
 
-            MsgBox(Err.Description)
+            MsgBox(ex.Message)
 
         End Try
 

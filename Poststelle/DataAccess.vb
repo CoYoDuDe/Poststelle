@@ -6,9 +6,70 @@ Imports System.IO
 
 Public Module DatabaseConfig
 
-    Public Const DatabaseFilePath As String = "Poststelle.db"
-    Public Const ConnectionString As String = "Data Source=Poststelle.db;"
-    Public Const SharedConnectionString As String = "FullUri=file:Poststelle.db?cache=shared"
+    Private ReadOnly appDataDirectoryValue As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Poststelle")
+    Private ReadOnly legacyDatabaseFilePathValue As String = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Poststelle.db")
+
+    Public ReadOnly Property ApplicationDataDirectory As String
+        Get
+            EnsureDataDirectory()
+            Return appDataDirectoryValue
+        End Get
+    End Property
+
+    Public ReadOnly Property DatabaseFilePath As String
+        Get
+            EnsureDataDirectory()
+            MigrateLegacyDatabaseIfNeeded()
+            Return Path.Combine(appDataDirectoryValue, "Poststelle.db")
+        End Get
+    End Property
+
+    Public ReadOnly Property DefaultBackupFilePath As String
+        Get
+            EnsureDataDirectory()
+            Return Path.Combine(appDataDirectoryValue, "PoststelleBackup.db")
+        End Get
+    End Property
+
+    Public ReadOnly Property ConnectionString As String
+        Get
+            Return "Data Source=" & DatabaseFilePath & ";"
+        End Get
+    End Property
+
+    Public ReadOnly Property SharedConnectionString As String
+        Get
+            Return "Data Source=" & DatabaseFilePath & ";Cache=Shared;"
+        End Get
+    End Property
+
+    Private Sub EnsureDataDirectory()
+
+        If Not Directory.Exists(appDataDirectoryValue) Then
+
+            Directory.CreateDirectory(appDataDirectoryValue)
+
+        End If
+
+    End Sub
+
+    Private Sub MigrateLegacyDatabaseIfNeeded()
+
+        If File.Exists(Path.Combine(appDataDirectoryValue, "Poststelle.db")) Then
+
+            Exit Sub
+
+        End If
+
+        If Not File.Exists(legacyDatabaseFilePathValue) Then
+
+            Exit Sub
+
+        End If
+
+        File.Copy(legacyDatabaseFilePathValue, Path.Combine(appDataDirectoryValue, "Poststelle.db"), overwrite:=False)
+
+    End Sub
 
 End Module
 
@@ -70,6 +131,31 @@ Public Class SettingsRepository
 
     End Function
 
+    Public Function HasRequiredSchema() As Boolean
+
+        If Not DatabaseExists() Then
+
+            Return False
+
+        End If
+
+        Try
+
+            Using connection As New SQLiteConnection(DatabaseConfig.ConnectionString)
+                connection.Open()
+
+                Return TableExists(connection, "Packete") AndAlso
+                       TableExists(connection, "Empfaenger") AndAlso
+                       TableExists(connection, "Einstellungen")
+            End Using
+        Catch
+
+            Return False
+
+        End Try
+
+    End Function
+
     Public Sub CreateDatabase()
 
         Using connection As New SQLiteConnection(DatabaseConfig.ConnectionString)
@@ -118,7 +204,7 @@ Public Class SettingsRepository
             connection.Open()
 
             Using command As New SQLiteCommand("INSERT INTO Einstellungen (AutodbBackup, AutodbBackupTime, AutodbBackupPfad) VALUES (0, 30, @AutodbBackupPfad)", connection)
-                AddTextParameter(command, "@AutodbBackupPfad", "PoststelleBackup.db")
+                AddTextParameter(command, "@AutodbBackupPfad", DatabaseConfig.DefaultBackupFilePath)
                 command.ExecuteNonQuery()
             End Using
         End Using
@@ -174,6 +260,15 @@ Public Class SettingsRepository
         End Using
 
     End Sub
+
+    Private Function TableExists(connection As SQLiteConnection, tableName As String) As Boolean
+
+        Using command As New SQLiteCommand("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @TableName", connection)
+            AddTextParameter(command, "@TableName", tableName)
+            Return Convert.ToInt32(command.ExecuteScalar()) > 0
+        End Using
+
+    End Function
 
 End Class
 

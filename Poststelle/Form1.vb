@@ -15,6 +15,7 @@ Public Class Form1
     Dim drag As Boolean
     Dim mousex As Integer
     Dim mousey As Integer
+    Private isInitializing As Boolean = True
 
     Public ste As String
     Public EmpaengerValue As String
@@ -92,24 +93,29 @@ Public Class Form1
 
         Me.SS.SizingGrip = False
 
-        If settingsRepository.DatabaseExists() Then
+        Try
 
-            ReloadUiData()
-            AutodbBackupEX()
+            If settingsRepository.HasRequiredSchema() Then
 
-        Else
+                ReloadUiData()
+                AutodbBackupEX()
 
-            Dbersstellen()
+            Else
 
-        End If
+                Dbersstellen()
+
+            End If
+        Finally
+
+            isInitializing = False
+
+        End Try
 
     End Sub
 
     Private Sub Dbersstellen()
 
         settingsRepository.CreateDatabase()
-
-        MsgBox("erster Start Datenbank wird erstellt!... ;-)")
 
         DBStrukturerstellen()
 
@@ -118,8 +124,6 @@ Public Class Form1
     Private Sub DBStrukturerstellen()
 
         settingsRepository.CreateSchema()
-
-        MsgBox("DB Tabellen und Struktur erstellt! ;-)")
 
         StandardEinstellungen()
 
@@ -132,8 +136,6 @@ Public Class Form1
             settingsRepository.InsertDefaultSettings()
             ReloadUiData()
             AutodbBackupEX()
-
-            MsgBox("Standard Einstellungen wurden eingerichtet! ;-)")
         Catch ex As Exception
 
             MsgBox("Fehler:" & ex.Message)
@@ -234,7 +236,7 @@ Public Class Form1
 
     Private Sub SenderCB_TextChanged(sender As Object, e As EventArgs) Handles SenderCB.TextChanged
 
-        If ShouldRefreshGrid() Then
+        If CanRefreshGrid() Then
 
             UpdGrid()
 
@@ -253,6 +255,12 @@ Public Class Form1
     End Sub
 
     Private Sub SenderCBFuellen()
+
+        If Not settingsRepository.HasRequiredSchema() Then
+
+            Exit Sub
+
+        End If
 
         PopulateComboBox(SenderCB, packageRepository.GetDistinctSenders())
 
@@ -277,7 +285,7 @@ Public Class Form1
 
     Private Sub EmpfaengerCB_TextChanged(sender As Object, e As EventArgs) Handles EmpfaengerCB.TextChanged
 
-        If ShouldRefreshGrid() Then
+        If CanRefreshGrid() Then
 
             UpdGrid()
 
@@ -296,6 +304,12 @@ Public Class Form1
     End Sub
 
     Public Sub EmpfaengerCBFuellen()
+
+        If Not settingsRepository.HasRequiredSchema() Then
+
+            Exit Sub
+
+        End If
 
         PopulateComboBox(EmpfaengerCB, recipientRepository.GetDistinctNames())
 
@@ -319,7 +333,7 @@ Public Class Form1
 
     Private Sub SendungsNummerTB_TextChanged(sender As Object, e As EventArgs) Handles SendungsNummerTB.TextChanged
 
-        If ShouldRefreshGrid() Then
+        If CanRefreshGrid() Then
 
             UpdGrid()
 
@@ -351,13 +365,21 @@ Public Class Form1
 
     Private Sub SeiteCB_SelectedIndexChanged(sender As Object, e As EventArgs) Handles SeiteCB.SelectedIndexChanged
 
-        UpdGrid()
+        If CanRefreshGrid() Then
+
+            UpdGrid()
+
+        End If
 
     End Sub
 
     Private Sub GedrucktCB_CheckedChanged(sender As Object, e As EventArgs) Handles GedrucktCB.CheckedChanged
 
-        UpdGrid()
+        If CanRefreshGrid() Then
+
+            UpdGrid()
+
+        End If
 
     End Sub
 
@@ -369,7 +391,7 @@ Public Class Form1
 
         End If
 
-        If ShouldRefreshGrid() Then
+        If CanRefreshGrid() Then
 
             UpdGrid()
 
@@ -468,6 +490,12 @@ Public Class Form1
 
     Private Sub SeitenFuellen()
 
+        If Not settingsRepository.HasRequiredSchema() Then
+
+            Exit Sub
+
+        End If
+
         Try
 
             Dim filter = CreateCurrentPackageFilter()
@@ -496,13 +524,19 @@ Public Class Form1
 
         Catch ex As Exception
 
-            MsgBox(Err.Description)
+            MsgBox(ex.Message)
 
         End Try
 
     End Sub
 
     Private Sub GenSeite()
+
+        If Not settingsRepository.HasRequiredSchema() Then
+
+            Exit Sub
+
+        End If
 
         If DatumFilterCB.Checked Then
 
@@ -585,6 +619,14 @@ Public Class Form1
     Private Function ShouldRefreshGrid() As Boolean
 
         Return Not String.Equals(SeiteCB.Text, UiText.PagePlaceholder, StringComparison.Ordinal)
+
+    End Function
+
+    Private Function CanRefreshGrid() As Boolean
+
+        Return Not isInitializing AndAlso
+               settingsRepository.HasRequiredSchema() AndAlso
+               ShouldRefreshGrid()
 
     End Function
 
