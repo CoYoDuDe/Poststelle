@@ -1,5 +1,7 @@
 Option Strict On
 
+Imports System.Text.RegularExpressions
+
 Public Module UiText
 
     Public Const SenderPlaceholder As String = "Sender"
@@ -124,6 +126,160 @@ Public Class PackageFormService
     Private Function IsPlaceholderOrEmpty(text As String, placeholder As String) As Boolean
 
         Return String.IsNullOrWhiteSpace(text) OrElse String.Equals(text, placeholder, StringComparison.Ordinal)
+
+    End Function
+
+End Class
+
+Public Class ShippingLabelParseResult
+
+    Public Property RawInput As String
+    Public Property CleanedTrackingNumber As String
+    Public Property DetectedCarrier As String
+    Public Property MatchedRecipient As String
+    Public Property WasNormalized As Boolean
+
+End Class
+
+Public Class ShippingLabelParser
+
+    Private Shared ReadOnly whitespacePattern As New Regex("\s+", RegexOptions.Compiled)
+
+    Public Function Parse(input As String, knownRecipients As IEnumerable(Of String)) As ShippingLabelParseResult
+
+        Dim normalizedInput As String = NormalizeWhitespace(input)
+        Dim result As New ShippingLabelParseResult With {
+            .RawInput = input,
+            .CleanedTrackingNumber = normalizedInput,
+            .DetectedCarrier = String.Empty,
+            .MatchedRecipient = String.Empty,
+            .WasNormalized = False
+        }
+
+        If String.IsNullOrWhiteSpace(normalizedInput) OrElse
+           String.Equals(normalizedInput, UiText.TrackingNumberPlaceholder, StringComparison.Ordinal) Then
+
+            Return result
+
+        End If
+
+        Dim compactInput As String = normalizedInput.Replace(" ", String.Empty).Replace("-", String.Empty)
+        Dim bestCandidate As String = GetBestTrackingCandidate(normalizedInput, compactInput)
+        Dim carrier As String = DetectCarrier(bestCandidate)
+        Dim recipient As String = MatchRecipient(normalizedInput, knownRecipients)
+
+        result.CleanedTrackingNumber = bestCandidate
+        result.DetectedCarrier = carrier
+        result.MatchedRecipient = recipient
+        result.WasNormalized = Not String.Equals(normalizedInput, bestCandidate, StringComparison.Ordinal)
+
+        Return result
+
+    End Function
+
+    Private Function NormalizeWhitespace(input As String) As String
+
+        If String.IsNullOrWhiteSpace(input) Then
+
+            Return String.Empty
+
+        End If
+
+        Return whitespacePattern.Replace(input.Trim(), " ")
+
+    End Function
+
+    Private Function GetBestTrackingCandidate(normalizedInput As String, compactInput As String) As String
+
+        Dim candidates As New List(Of String)()
+        candidates.Add(compactInput)
+
+        For Each token As String In normalizedInput.Split(" "c)
+
+            Dim cleanedToken As String = token.Trim().Replace("-", String.Empty)
+
+            If cleanedToken.Length >= 8 Then
+
+                candidates.Add(cleanedToken)
+
+            End If
+
+        Next
+
+        For Each candidate As String In candidates.OrderByDescending(Function(x) x.Length)
+
+            Dim detectedCarrier As String = DetectCarrier(candidate)
+
+            If detectedCarrier <> String.Empty Then
+
+                Return candidate
+
+            End If
+
+        Next
+
+        Return candidates.OrderByDescending(Function(x) x.Length).First()
+
+    End Function
+
+    Private Function DetectCarrier(candidate As String) As String
+
+        If Regex.IsMatch(candidate, "^1Z[0-9A-Z]{16}$", RegexOptions.IgnoreCase) Then
+
+            Return "UPS"
+
+        End If
+
+        If Regex.IsMatch(candidate, "^(JD0?\d{16,18}|\d{20})$", RegexOptions.IgnoreCase) Then
+
+            Return "DHL"
+
+        End If
+
+        If Regex.IsMatch(candidate, "^\d{14}$") Then
+
+            Return "DPD"
+
+        End If
+
+        If Regex.IsMatch(candidate, "^\d{8,11}$") Then
+
+            Return "GLS"
+
+        End If
+
+        If Regex.IsMatch(candidate, "^\d{12,15}$") Then
+
+            Return "FedEx"
+
+        End If
+
+        Return String.Empty
+
+    End Function
+
+    Private Function MatchRecipient(normalizedInput As String, knownRecipients As IEnumerable(Of String)) As String
+
+        Dim bestMatch As String = String.Empty
+
+        For Each knownRecipient As String In knownRecipients
+
+            If String.IsNullOrWhiteSpace(knownRecipient) OrElse knownRecipient.Length < 3 Then
+
+                Continue For
+
+            End If
+
+            If normalizedInput.IndexOf(knownRecipient, StringComparison.OrdinalIgnoreCase) >= 0 AndAlso
+               knownRecipient.Length > bestMatch.Length Then
+
+                bestMatch = knownRecipient
+
+            End If
+
+        Next
+
+        Return bestMatch
 
     End Function
 

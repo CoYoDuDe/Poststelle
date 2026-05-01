@@ -8,6 +8,7 @@ Public Class Form1
     Private ReadOnly recipientRepository As New RecipientRepository()
     Private ReadOnly packageRepository As New PackageRepository()
     Private ReadOnly packageFormService As New PackageFormService()
+    Private ReadOnly shippingLabelParser As New ShippingLabelParser()
 
     Dim myBindingSource As New BindingSource
     Dim myData As New DataTable
@@ -92,6 +93,7 @@ Public Class Form1
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
         Me.SS.SizingGrip = False
+        ToolStripStatusLabel1.Text = "Bereit"
 
         Try
 
@@ -319,6 +321,8 @@ Public Class Form1
 
         If e.KeyCode = Keys.Enter Then
 
+            ApplyLabelScanParsing()
+
             If MaybeOpenRecipientMaintenance() Then
 
                 Exit Sub
@@ -350,6 +354,10 @@ Public Class Form1
         If String.IsNullOrWhiteSpace(SendungsNummerTB.Text) Then
 
             SendungsNummerTB.Text = UiText.TrackingNumberPlaceholder
+
+        Else
+
+            ApplyLabelScanParsing()
 
         End If
 
@@ -620,6 +628,7 @@ Public Class Form1
         SenderCB.Text = UiText.SenderPlaceholder
         EmpfaengerCB.Text = UiText.RecipientPlaceholder
         SendungsNummerTB.Text = UiText.TrackingNumberPlaceholder
+        ToolStripStatusLabel1.Text = "Bereit"
 
     End Sub
 
@@ -703,6 +712,80 @@ Public Class Form1
         Next
 
         Return values
+
+    End Function
+
+    Private Sub ApplyLabelScanParsing()
+
+        Dim parseResult As ShippingLabelParseResult =
+            shippingLabelParser.Parse(SendungsNummerTB.Text, GetComboBoxValues(EmpfaengerCB))
+
+        If String.IsNullOrWhiteSpace(parseResult.CleanedTrackingNumber) Then
+
+            Exit Sub
+
+        End If
+
+        If Not String.Equals(SendungsNummerTB.Text, parseResult.CleanedTrackingNumber, StringComparison.Ordinal) Then
+
+            SendungsNummerTB.Text = parseResult.CleanedTrackingNumber
+            SendungsNummerTB.SelectionStart = SendungsNummerTB.TextLength
+
+        End If
+
+        If Not String.IsNullOrWhiteSpace(parseResult.DetectedCarrier) AndAlso
+           (String.Equals(SenderCB.Text, UiText.SenderPlaceholder, StringComparison.Ordinal) OrElse String.IsNullOrWhiteSpace(SenderCB.Text)) Then
+
+            SenderCB.Text = parseResult.DetectedCarrier
+
+        End If
+
+        If Not String.IsNullOrWhiteSpace(parseResult.MatchedRecipient) AndAlso
+           (String.Equals(EmpfaengerCB.Text, UiText.RecipientPlaceholder, StringComparison.Ordinal) OrElse String.IsNullOrWhiteSpace(EmpfaengerCB.Text)) Then
+
+            EmpfaengerCB.Text = parseResult.MatchedRecipient
+
+        End If
+
+        ToolStripStatusLabel1.Text = BuildScanStatus(parseResult)
+
+    End Sub
+
+    Private Function BuildScanStatus(parseResult As ShippingLabelParseResult) As String
+
+        If String.IsNullOrWhiteSpace(parseResult.CleanedTrackingNumber) Then
+
+            Return "Bereit"
+
+        End If
+
+        Dim parts As New List(Of String)()
+
+        If Not String.IsNullOrWhiteSpace(parseResult.DetectedCarrier) Then
+
+            parts.Add("Carrier: " & parseResult.DetectedCarrier)
+
+        End If
+
+        If Not String.IsNullOrWhiteSpace(parseResult.MatchedRecipient) Then
+
+            parts.Add("Empfaenger: " & parseResult.MatchedRecipient)
+
+        End If
+
+        If parseResult.WasNormalized Then
+
+            parts.Add("Scan bereinigt")
+
+        End If
+
+        If parts.Count = 0 Then
+
+            Return "Scan erkannt"
+
+        End If
+
+        Return String.Join(" | ", parts)
 
     End Function
 
