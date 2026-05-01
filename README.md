@@ -1,6 +1,6 @@
-# Poststelle Classic
+# Poststelle
 
-`Poststelle Classic` ist ein archiviertes und bereinigtes VB.NET-WinForms-Projekt fuer die Erfassung eingehender Sendungen mit SQLite.
+`Poststelle` ist ein archiviertes und bereinigtes VB.NET-WinForms-Projekt fuer die Erfassung eingehender Sendungen mit SQLite.
 
 Dieses Repository bewahrt den historischen Stand in einer Form, die wieder nachvollziehbar, umbenannt und fuer eine spaetere Modernisierung vorbereitet ist.
 
@@ -14,15 +14,15 @@ Dieses Repository bewahrt den historischen Stand in einer Form, die wieder nachv
 
 - Projekt, Solution und Assembly auf `Poststelle` umbenannt
 - alte Build-Artefakte (`bin`, `obj`, `*.user`) entfernt
-- neue neutrale Logo- und Icon-Dateien ohne `Logwin`-Branding erzeugt
+- neue neutrale Logo- und Icon-Dateien ohne Alt-Branding erzeugt
 - Git-Ignore fuer lokale Datenbanken und Build-Dateien hinzugefuegt
 - Modernisierungsnotizen dokumentiert
 
 ## Projektstruktur
 
-- [Poststelle.sln](/root/poststelle-classic/Poststelle.sln)
-- [Poststelle](/root/poststelle-classic/Poststelle)
-- [MIGRATION.md](/root/poststelle-classic/MIGRATION.md)
+- [Poststelle.sln](/root/poststelle/Poststelle.sln)
+- [Poststelle](/root/poststelle/Poststelle)
+- [MIGRATION.md](/root/poststelle/MIGRATION.md)
 
 ## Build-Hinweise
 

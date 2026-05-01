@@ -56,7 +56,8 @@ Public Class Form2
 
             Try
 
-                com = New SQLiteCommand("SELECT * FROM Einstellungen WHERE ID = '1'", con)
+                com = New SQLiteCommand("SELECT * FROM Einstellungen WHERE ID = @Id", con)
+                com.Parameters.AddWithValue("@Id", 1)
 
                 rd = com.ExecuteReader
 
@@ -113,9 +114,10 @@ Public Class Form2
 
     Private Sub SpeichernButton_Click(sender As Object, e As EventArgs) Handles SpeichernButton.Click
 
-        If MinutenTB.Text = "Minuten" AndAlso MinutenTB.Text = "" OrElse FilePatchTB.Text = "FilePatch" AndAlso FilePatchTB.Text = "" Then
+        If MinutenTB.Text = "Minuten" OrElse MinutenTB.Text = "" OrElse FilePatchTB.Text = "FilePatch" OrElse FilePatchTB.Text = "" Then
 
             MsgBox("Bitte alle Felder ausfüllen! ;-)")
+            Exit Sub
 
         End If
 
@@ -151,10 +153,14 @@ Public Class Form2
 
                 com = New SQLiteCommand(
                                          "UPDATE Einstellungen SET 
-                                         AutodbBackup = '" & AutodbBak & "',
-                                         AutodbBackupTime = '" & AutodbBakTim & "',
-                                         AutodbBackupPfad = '" & AutodbBakPf & "'
-                                         WHERE ID = 1", con)
+                                         AutodbBackup = @AutodbBackup,
+                                         AutodbBackupTime = @AutodbBackupTime,
+                                         AutodbBackupPfad = @AutodbBackupPfad
+                                         WHERE ID = @Id", con)
+                com.Parameters.AddWithValue("@AutodbBackup", AutodbBak)
+                com.Parameters.AddWithValue("@AutodbBackupTime", AutodbBakTim)
+                com.Parameters.AddWithValue("@AutodbBackupPfad", AutodbBakPf)
+                com.Parameters.AddWithValue("@Id", 1)
 
                 com.ExecuteNonQuery()
                 con.Close()

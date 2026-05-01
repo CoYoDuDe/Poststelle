@@ -274,7 +274,8 @@ Public Class Form1
 
             Try
 
-                com = New SQLiteCommand("SELECT * FROM Einstellungen WHERE ID = '1'", con)
+                com = New SQLiteCommand("SELECT * FROM Einstellungen WHERE ID = @Id", con)
+                com.Parameters.AddWithValue("@Id", 1)
 
                 rd = com.ExecuteReader
 
@@ -316,7 +317,8 @@ Public Class Form1
 
             Try
 
-                com = New SQLiteCommand("SELECT * FROM Einstellungen WHERE ID = '1'", con)
+                com = New SQLiteCommand("SELECT * FROM Einstellungen WHERE ID = @Id", con)
+                com.Parameters.AddWithValue("@Id", 1)
 
                 rd = com.ExecuteReader
 
@@ -572,7 +574,7 @@ Public Class Form1
 
             UpdGrid()
 
-        ElseIf senderCB.Text = "LogWin" AndAlso EmpfaengerCb.text = "LogWin" AndAlso SendungsNummerTB.Text = "LogWin" Then
+        ElseIf senderCB.Text = "Poststelle" AndAlso EmpfaengerCb.text = "Poststelle" AndAlso SendungsNummerTB.Text = "Poststelle" Then
 
             Form4.Show()
 
@@ -658,8 +660,15 @@ Public Class Form1
 
                 com = New SQLiteCommand(
                                          "UPDATE Packete SET 
-                                         Gedruckt = '1'
-                                          WHERE Datum LIKE '" & DTM & "' AND Mandant LIKE '" & ste & "' AND Sender LIKE '" & Send & "' AND SendungsNummer Like '" & SendNr & "' AND Empfaenger LIKE '" & Empf & "' AND Gedruckt LIKE '" & Gedruckt & "'", con)
+                                         Gedruckt = @GedrucktNeu
+                                          WHERE Datum LIKE @Datum AND Mandant LIKE @Mandant AND Sender LIKE @Sender AND SendungsNummer Like @SendungsNummer AND Empfaenger LIKE @Empfaenger AND Gedruckt LIKE @Gedruckt", con)
+                com.Parameters.AddWithValue("@GedrucktNeu", "1")
+                com.Parameters.AddWithValue("@Datum", DTM)
+                com.Parameters.AddWithValue("@Mandant", ste)
+                com.Parameters.AddWithValue("@Sender", Send)
+                com.Parameters.AddWithValue("@SendungsNummer", SendNr)
+                com.Parameters.AddWithValue("@Empfaenger", Empf)
+                com.Parameters.AddWithValue("@Gedruckt", Gedruckt)
 
                 com.ExecuteNonQuery()
                 con.Close()
@@ -696,7 +705,8 @@ Public Class Form1
 
             Try
 
-                com = New SQLiteCommand("SELECT Abladestelle, Mandant FROM Empfaenger WHERE Name = '" & Empf & "'", con)
+                com = New SQLiteCommand("SELECT Abladestelle, Mandant FROM Empfaenger WHERE Name = @Name", con)
+                com.Parameters.AddWithValue("@Name", Empf)
 
                 rd = com.ExecuteReader
 
@@ -752,16 +762,24 @@ Public Class Form1
                 )
                     VALUES
                     (
-                    '" & Mand & "',
-                    '" & DTM & "',
-                    '" & Abl & "',
-                    '" & Send & "',
-                    '" & SendNr & "',
-                    '" & Empf & "',
-                    '                                                           ',
-                    '0'
+                    @Mandant,
+                    @Datum,
+                    @Abladestelle,
+                    @Sender,
+                    @SendungsNummer,
+                    @Empfaenger,
+                    @Unterschrift,
+                    @Gedruckt
 
                     )", con)
+                    com.Parameters.AddWithValue("@Mandant", Mand)
+                    com.Parameters.AddWithValue("@Datum", DTM)
+                    com.Parameters.AddWithValue("@Abladestelle", Abl)
+                    com.Parameters.AddWithValue("@Sender", Send)
+                    com.Parameters.AddWithValue("@SendungsNummer", SendNr)
+                    com.Parameters.AddWithValue("@Empfaenger", Empf)
+                    com.Parameters.AddWithValue("@Unterschrift", "                                                           ")
+                    com.Parameters.AddWithValue("@Gedruckt", "0")
 
                     com.ExecuteNonQuery()
                     con.Close()
@@ -803,7 +821,8 @@ Public Class Form1
 
             Try
 
-                com = New SQLiteCommand("SELECT DISTINCT Mandant FROM Packete WHERE Datum = '" & DTM & "'", con)
+                com = New SQLiteCommand("SELECT DISTINCT Mandant FROM Packete WHERE Datum = @Datum", con)
+                com.Parameters.AddWithValue("@Datum", DTM)
 
                 rd = com.ExecuteReader
 
@@ -892,7 +911,15 @@ Public Class Form1
 
         End If
 
-        Dim myAdapter As New SQLite.SQLiteDataAdapter("SELECT * FROM Packete WHERE Datum LIKE '" & DTM & "' AND Mandant LIKE '" & ste & "' AND Sender LIKE '" & Send & "' AND SendungsNummer Like '" & SendNr & "' AND Empfaenger LIKE '" & Empf & "' AND Gedruckt LIKE '" & Gedruckt & "'", connectionString)
+        Dim selectConnection As New SQLiteConnection(connectionString)
+        Dim selectCommand As New SQLiteCommand("SELECT * FROM Packete WHERE Datum LIKE @Datum AND Mandant LIKE @Mandant AND Sender LIKE @Sender AND SendungsNummer Like @SendungsNummer AND Empfaenger LIKE @Empfaenger AND Gedruckt LIKE @Gedruckt", selectConnection)
+        selectCommand.Parameters.AddWithValue("@Datum", DTM)
+        selectCommand.Parameters.AddWithValue("@Mandant", ste)
+        selectCommand.Parameters.AddWithValue("@Sender", Send)
+        selectCommand.Parameters.AddWithValue("@SendungsNummer", SendNr)
+        selectCommand.Parameters.AddWithValue("@Empfaenger", Empf)
+        selectCommand.Parameters.AddWithValue("@Gedruckt", Gedruckt)
+        Dim myAdapter As New SQLite.SQLiteDataAdapter(selectCommand)
 
         Try
 
@@ -944,7 +971,8 @@ Public Class Form1
 
                 Try
 
-                    com = New SQLiteCommand("SELECT DISTINCT Mandant FROM Packete WHERE Datum = '" & DTM & "'", con)
+                    com = New SQLiteCommand("SELECT DISTINCT Mandant FROM Packete WHERE Datum = @Datum", con)
+                    com.Parameters.AddWithValue("@Datum", DTM)
 
                     rd = com.ExecuteReader
 
@@ -1044,19 +1072,19 @@ Public Class Form1
 
     End Sub
 
-    Dim LogWin As Integer
+    Dim EasterEggCounter As Integer
 
     Private Sub PictureBox1_Click(sender As Object, e As EventArgs) Handles PictureBox1.Click
 
-        LogWin = LogWin + 1
+        EasterEggCounter = EasterEggCounter + 1
 
-        If LogWin = "5" Then
+        If EasterEggCounter = 5 Then
 
-            SenderCB.Text = "LogWin"
-            EmpfaengerCB.Text = "LogWin"
-            SendungsNummerTB.Text = "LogWin"
+            SenderCB.Text = "Poststelle"
+            EmpfaengerCB.Text = "Poststelle"
+            SendungsNummerTB.Text = "Poststelle"
 
-            LogWin = "0"
+            EasterEggCounter = 0
 
         End If
 

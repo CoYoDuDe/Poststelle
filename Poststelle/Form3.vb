@@ -107,10 +107,13 @@ Public Class Form3
                 )
                     VALUES
                     (
-                    '" & Name & "',
-                    '" & Abladestelle & "',
-                    '" & Mandant & "'
+                    @Name,
+                    @Abladestelle,
+                    @Mandant
                     )", con)
+                    com.Parameters.AddWithValue("@Name", Name)
+                    com.Parameters.AddWithValue("@Abladestelle", Abladestelle)
+                    com.Parameters.AddWithValue("@Mandant", Mandant)
 
                     com.ExecuteNonQuery()
                     con.Close()
@@ -399,7 +402,12 @@ Public Class Form3
 
         End If
 
-        Dim myAdapter As New SQLite.SQLiteDataAdapter("SELECT * FROM Empfaenger WHERE Name LIKE '" & NME & "' AND Abladestelle LIKE '" & ABL & "' AND Mandant LIKE '" & MDT & "'", connectionString)
+        Dim selectConnection As New SQLiteConnection(connectionString)
+        Dim selectCommand As New SQLiteCommand("SELECT * FROM Empfaenger WHERE Name LIKE @Name AND Abladestelle LIKE @Abladestelle AND Mandant LIKE @Mandant", selectConnection)
+        selectCommand.Parameters.AddWithValue("@Name", NME)
+        selectCommand.Parameters.AddWithValue("@Abladestelle", ABL)
+        selectCommand.Parameters.AddWithValue("@Mandant", MDT)
+        Dim myAdapter As New SQLite.SQLiteDataAdapter(selectCommand)
 
         Try
 
