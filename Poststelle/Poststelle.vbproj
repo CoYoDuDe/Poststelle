@@ -99,6 +99,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ApplicationEvents.vb" />
+    <Compile Include="ApplicationServices.vb" />
     <Compile Include="DataAccess.vb" />
     <Compile Include="DataGridViewPrinter.vb" />
     <Compile Include="EnhancedPrintPreviewDialog.vb">

@@ -17,6 +17,9 @@ Dieses Repository bewahrt den historischen Stand in einer Form, die wieder nachv
 - neue neutrale Logo- und Icon-Dateien ohne Alt-Branding erzeugt
 - Git-Ignore fuer lokale Datenbanken und Build-Dateien hinzugefuegt
 - Modernisierungsnotizen dokumentiert
+- SQLite-Zugriffe in gemeinsame Repositories ausgelagert
+- Formularlogik in Services fuer Filter, Validierung und Datensatz-Erzeugung aufgeteilt
+- Windows-Build mit aktuellem Refactoring erneut erfolgreich geprueft
 
 ## Projektstruktur
 
@@ -50,10 +53,21 @@ apt-get autoremove -y
 ## Bekannte technische Schulden
 
 - Windows-only durch klassisches WinForms auf .NET Framework
-- viele SQL-Statements sind als Stringverkettung implementiert
+- weiterhin alte Designer- und Event-Strukturen aus WinForms-Zeiten
 - `Option Strict Off` erschwert sichere Refactorings
 - keine automatisierten Tests
+- klassisches `packages.config` statt modernem SDK-/PackageReference-Stil
 - keine Build-Umgebung im aktuellen Export enthalten
+
+## Aktueller Modernisierungsstand
+
+Die Anwendung ist wieder in einem brauchbaren Zwischenzustand:
+
+- Datenzugriffe liegen nicht mehr verstreut in `Form1`, `Form2` und `Form3`, sondern in gemeinsamen Repository-Klassen
+- wiederholte UI- und Filterlogik wurde in `ApplicationServices.vb` zentralisiert
+- der Windows-Build laeuft nach dem Refactoring wieder durch
+
+Das ist noch keine komplette Neuentwicklung, aber ein sinnvoller Zustand fuer weitere Pflege, Releases und spaetere Portierung.
 
 ## Empfehlung
 
@@ -61,7 +75,8 @@ Fuer eine spaetere echte Modernisierung ist der sinnvollste naechste Schritt kei
 
 1. Build unter Windows wiederherstellen
 2. Datenbankzugriffe kapseln und parameterisieren
-3. das Projekt auf ein modernes .NET-Windows-Target heben
-4. erst danach ueber C#-Migration oder komplette Neuentwicklung entscheiden
+3. `Option Strict` vorbereiten und implizite Konvertierungen abbauen
+4. das Projekt auf ein modernes .NET-Windows-Target heben
+5. erst danach ueber C#-Migration oder komplette Neuentwicklung entscheiden
 
 Kurz gesagt: jetzt sauber in .NET/VB.NET weiter aufraeumen, nicht sofort die Sprache wechseln. Eine C#-Migration ist sinnvoller als spaeterer Schritt, sobald Verhalten, Build und Datenzugriff stabilisiert sind.

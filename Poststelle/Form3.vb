@@ -1,6 +1,7 @@
 Public Class Form3
 
     Private ReadOnly recipientRepository As New RecipientRepository()
+    Private ReadOnly recipientFormService As New RecipientFormService()
 
     Dim myBindingSource As New BindingSource
     Dim myData As New DataTable
@@ -8,9 +9,6 @@ Public Class Form3
     Dim drag As Boolean
     Dim mousex As Integer
     Dim mousey As Integer
-    Dim NME As String
-    Dim ABL As String
-    Dim MDT As String
 
     Const WM_NCLBUTTONDOWN As Integer = &HA1S
     Const HTBOTTOMRIGHT As Integer = 17
@@ -48,10 +46,7 @@ Public Class Form3
 
     Private Sub Form3_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
-        NameCBFuellen()
-        AbladestelleCBFuellen()
-        MandantCBFuellen()
-        EmpfaengerFuellen()
+        ReloadUiData()
 
     End Sub
 
@@ -69,44 +64,29 @@ Public Class Form3
 
     Private Sub SpeichernButton_Click(sender As Object, e As EventArgs) Handles SpeichernButton.Click
 
-        Dim Name As String = NameCB.Text
-        Dim Abladestelle As String = AbladestelleCB.Text
-        Dim Mandant As String = MandantCB.Text
+        If Not recipientFormService.IsRecipientEntryComplete(NameCB.Text, AbladestelleCB.Text, MandantCB.Text) Then
 
-        If NameCB.Text = "" Or AbladestelleCB.Text = "" Or MandantCB.Text = "" Or NameCB.Text = "Name" Or AbladestelleCB.Text = "Abladestelle" Or MandantCB.Text = "Mandant" Then
-
-            MsgBox("Bitte alle Felder ausfüllen! ;-)")
+            MsgBox("Bitte alle Felder ausfuellen! ;-)")
 
         ElseIf NameCB.Items.Contains(NameCB.Text) Then
 
-            MsgBox("Den Empfänger gibt es schon! ;-)")
+            MsgBox("Den Empfaenger gibt es schon! ;-)")
 
         Else
 
             Try
 
                 recipientRepository.Upsert(New RecipientRecord With {
-                    .Name = Name,
-                    .Abladestelle = Abladestelle,
-                    .Mandant = Mandant
+                    .Name = NameCB.Text,
+                    .Abladestelle = AbladestelleCB.Text,
+                    .Mandant = MandantCB.Text
                 })
 
-                MsgBox("Empfänger würde geändert/angelegt! ;-)")
+                MsgBox("Empfaenger wurde geaendert/angelegt! ;-)")
 
-                NameCB.Items.Clear()
-                AbladestelleCB.Items.Clear()
-                MandantCB.Items.Clear()
-
-                AbladestelleCBFuellen()
-                MandantCBFuellen()
-                NameCBFuellen()
-                UpdGrid()
+                ReloadUiData()
                 Form1.EmpfaengerCBFuellen()
-
-                NameCB.Text = "Name"
-                AbladestelleCB.Text = "Abladestelle"
-                MandantCB.Text = "Mandant"
-
+                ResetEntryFields()
                 SchließenButton.Focus()
             Catch ex As Exception
 
@@ -131,25 +111,15 @@ Public Class Form3
 
     Private Sub NameCB_TextChanged(sender As Object, e As EventArgs) Handles NameCB.TextChanged
 
-        If NameCB.Text = "Name" Then
-
-        ElseIf NameCB.Text = "" Then
-
-            UpdGrid()
-
-        Else
-
-            UpdGrid()
-
-        End If
+        UpdGrid()
 
     End Sub
 
     Private Sub NameCB_Leave(sender As Object, e As EventArgs) Handles NameCB.Leave
 
-        If NameCB.Text = "" Then
+        If String.IsNullOrWhiteSpace(NameCB.Text) Then
 
-            NameCB.Text = "Name"
+            NameCB.Text = UiText.NamePlaceholder
 
         End If
 
@@ -174,25 +144,15 @@ Public Class Form3
 
     Private Sub AbladestelleCB_TextChanged(sender As Object, e As EventArgs) Handles AbladestelleCB.TextChanged
 
-        If AbladestelleCB.Text = "Abladestelle" Then
-
-        ElseIf AbladestelleCB.Text = "" Then
-
-            UpdGrid()
-
-        Else
-
-            UpdGrid()
-
-        End If
+        UpdGrid()
 
     End Sub
 
     Private Sub AbladestelleCB_Leave(sender As Object, e As EventArgs) Handles AbladestelleCB.Leave
 
-        If AbladestelleCB.Text = "" Then
+        If String.IsNullOrWhiteSpace(AbladestelleCB.Text) Then
 
-            AbladestelleCB.Text = "Abladestelle"
+            AbladestelleCB.Text = UiText.DropOffPlaceholder
 
         End If
 
@@ -216,25 +176,15 @@ Public Class Form3
 
     Private Sub MandantCB_TextChanged(sender As Object, e As EventArgs) Handles MandantCB.TextChanged
 
-        If MandantCB.Text = "Mandant" Then
-
-        ElseIf MandantCB.Text = "" Then
-
-            UpdGrid()
-
-        Else
-
-            UpdGrid()
-
-        End If
+        UpdGrid()
 
     End Sub
 
     Private Sub MandantCB_Leave(sender As Object, e As EventArgs) Handles MandantCB.Leave
 
-        If MandantCB.Text = "" Then
+        If String.IsNullOrWhiteSpace(MandantCB.Text) Then
 
-            MandantCB.Text = "Mandant"
+            MandantCB.Text = UiText.ClientPlaceholder
 
         End If
 
@@ -248,43 +198,11 @@ Public Class Form3
 
     Private Sub EmpfaengerFuellen()
 
-        If NameCB.Text = "Name" Or NameCB.Text = "" Then
-
-            NME = "%"
-
-        Else
-
-            NME = "%" + NameCB.Text + "%"
-
-        End If
-
-        If AbladestelleCB.Text = "Abladestelle" Or AbladestelleCB.Text = "" Then
-
-            ABL = "%"
-
-        Else
-
-            ABL = "%" + AbladestelleCB.Text + "%"
-
-        End If
-
-        If MandantCB.Text = "Mandant" Or MandantCB.Text = "" Then
-
-            MDT = "%"
-
-        Else
-
-            MDT = "%" + MandantCB.Text + "%"
-
-        End If
-
         Try
 
-            myData = recipientRepository.Search(New RecipientFilter With {
-                .Name = NME,
-                .Abladestelle = ABL,
-                .Mandant = MDT
-            })
+            myData = recipientRepository.Search(recipientFormService.BuildFilter(NameCB.Text,
+                                                                                 AbladestelleCB.Text,
+                                                                                 MandantCB.Text))
             myBindingSource.DataSource = myData
 
             DataGridView1.DataSource = myBindingSource
@@ -317,7 +235,6 @@ Public Class Form3
 
             myBindingSource.EndEdit()
             recipientRepository.SaveChanges(myData)
-
             Form1.EmpfaengerCBFuellen()
 
         Catch ex As Exception
@@ -331,6 +248,24 @@ Public Class Form3
     Private Sub UpdGrid()
 
         EmpfaengerFuellen()
+
+    End Sub
+
+    Private Sub ReloadUiData()
+
+        NameCBFuellen()
+        AbladestelleCBFuellen()
+        MandantCBFuellen()
+        ResetEntryFields()
+        EmpfaengerFuellen()
+
+    End Sub
+
+    Private Sub ResetEntryFields()
+
+        NameCB.Text = UiText.NamePlaceholder
+        AbladestelleCB.Text = UiText.DropOffPlaceholder
+        MandantCB.Text = UiText.ClientPlaceholder
 
     End Sub
 

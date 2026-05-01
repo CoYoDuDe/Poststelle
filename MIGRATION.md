@@ -17,13 +17,29 @@ Fazit: Pflege und Refactoring koennen auf Linux weiterlaufen, finale Build-Pruef
 ## Empfohlene Reihenfolge
 
 1. Eine reproduzierbare Windows-Build-Umgebung herstellen.
-2. Das klassische `packages.config` in ein modernes Paketmanagement ueberfuehren.
-3. Datenbankzugriffe zentralisieren und alle Schreib-/Lesezugriffe auf parametrisierte SQL-Commands umstellen.
-4. `Option Strict On` vorbereiten und implizite Konvertierungen schrittweise entfernen.
-5. UI und Datenzugriff trennen, damit spaetere Portierungen einfacher werden.
-6. Danach entscheiden:
+2. Datenbankzugriffe zentralisieren und alle Schreib-/Lesezugriffe auf parametrisierte SQL-Commands umstellen.
+3. wiederkehrende Formularlogik in gemeinsame Services verschieben.
+4. Das klassische `packages.config` in ein moderneres Paketmanagement ueberfuehren.
+5. `Option Strict On` vorbereiten und implizite Konvertierungen schrittweise entfernen.
+6. UI und Datenzugriff noch klarer trennen, damit spaetere Portierungen einfacher werden.
+7. Danach entscheiden:
    - konservativ: VB.NET beibehalten, aber auf modernes Windows-.NET umstellen
    - offensiv: nach C# oder in eine neue Desktop-/Web-Anwendung migrieren
+
+## Stand nach aktuellem Refactoring
+
+Bereits erledigt:
+
+- Windows-Build auf dem aktuellen Stand wieder erfolgreich geprueft
+- SQLite-Zugriffe aus `Form1`, `Form2` und `Form3` in Repository-Klassen verschoben
+- wiederkehrende UI-Logik fuer Filter, Platzhalter und Validierung in `ApplicationServices.vb` zentralisiert
+
+Noch offen:
+
+- `Option Strict Off` abbauen
+- WinForms-Designer-Code weiter entflechten
+- Paketverwaltung modernisieren
+- Zielplattformentscheidung fuer spaeteres .NET-/C#-Upgrade treffen
 
 ## Sprachentscheidung
 
@@ -38,7 +54,7 @@ Aktuell ist ein Sprachwechsel nicht der beste erste Schritt.
   - leichtere Entwicklerfindung
   - aber erst sinnvoll, wenn Build, Datenzugriff und Verhalten abgesichert sind
 
-Empfehlung: jetzt bei .NET bleiben und den Altcode sauber machen; C# erst als zweite Phase angehen.
+Empfehlung: jetzt bei .NET bleiben und den Altcode sauber machen; C# erst als zweite Phase angehen. Ein Sprachwechsel ist erst dann sinnvoll, wenn Verhalten, Datenmodell und Release-Build stabil sind.
 
 ## Naechste konkrete Kandidaten
 

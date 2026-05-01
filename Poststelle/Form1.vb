@@ -7,6 +7,7 @@ Public Class Form1
     Private ReadOnly settingsRepository As New SettingsRepository()
     Private ReadOnly recipientRepository As New RecipientRepository()
     Private ReadOnly packageRepository As New PackageRepository()
+    Private ReadOnly packageFormService As New PackageFormService()
 
     Dim myBindingSource As New BindingSource
     Dim myData As New DataTable
@@ -14,14 +15,6 @@ Public Class Form1
     Dim drag As Boolean
     Dim mousex As Integer
     Dim mousey As Integer
-    Dim Pat As String
-    Dim DTM As String
-    Dim Send As String
-    Dim Empf As String
-    Dim Abl As String
-    Dim SendNr As String
-    Dim Mand As String
-    Dim Gedruckt As String
 
     Public ste As String
     Public EmpaengerValue As String
@@ -101,10 +94,7 @@ Public Class Form1
 
         If settingsRepository.DatabaseExists() Then
 
-            EmpfaengerCBFuellen()
-            SenderCBFuellen()
-            GenSeite()
-            UpdGrid()
+            ReloadUiData()
             AutodbBackupEX()
 
         Else
@@ -140,11 +130,10 @@ Public Class Form1
         Try
 
             settingsRepository.InsertDefaultSettings()
+            ReloadUiData()
+            AutodbBackupEX()
 
-            MsgBox("Standard Einstellungen Wurden Eingerichtet! ;-)")
-
-            EmpfaengerCBFuellen()
-            SenderCBFuellen()
+            MsgBox("Standard Einstellungen wurden eingerichtet! ;-)")
         Catch ex As Exception
 
             MsgBox("Fehler:" & ex.Message)
@@ -245,7 +234,7 @@ Public Class Form1
 
     Private Sub SenderCB_TextChanged(sender As Object, e As EventArgs) Handles SenderCB.TextChanged
 
-        If Not SenderCB.Text = "Sender" And Not SeiteCB.Text = "Seite" Then
+        If ShouldRefreshGrid() Then
 
             UpdGrid()
 
@@ -255,9 +244,9 @@ Public Class Form1
 
     Private Sub SenderCB_Leave(sender As Object, e As EventArgs) Handles SenderCB.Leave
 
-        If SenderCB.Text = "" Then
+        If String.IsNullOrWhiteSpace(SenderCB.Text) Then
 
-            SenderCB.Text = "Sender"
+            SenderCB.Text = UiText.SenderPlaceholder
 
         End If
 
@@ -273,27 +262,14 @@ Public Class Form1
 
         If e.KeyCode = Keys.Enter Then
 
-            If Not EmpfaengerCB.Items.Contains(EmpfaengerCB.Text) And Not EmpfaengerCB.Text = "Empfänger" And Not EmpfaengerCB.Text = "" Then
+            If MaybeOpenRecipientMaintenance() Then
 
-                If MsgBox("Empfänger Nicht Gefunden Eintragen? ;-)", vbYesNo) = vbYes Then
-
-                    Form3.Show()
-                    Form3.AbladestelleCB.Focus()
-                    Form3.NameCB.Text = EmpfaengerCB.Text
-
-                Else
-
-                    SendungsNummerTB.Focus()
-                    SendungsNummerTB.SelectAll()
-
-                End If
-
-            Else
-
-                SendungsNummerTB.Focus()
-                SendungsNummerTB.SelectAll()
+                Exit Sub
 
             End If
+
+            SendungsNummerTB.Focus()
+            SendungsNummerTB.SelectAll()
 
         End If
 
@@ -301,7 +277,7 @@ Public Class Form1
 
     Private Sub EmpfaengerCB_TextChanged(sender As Object, e As EventArgs) Handles EmpfaengerCB.TextChanged
 
-        If Not EmpfaengerCB.Text = "Empfänger" And Not SeiteCB.Text = "Seite" Then
+        If ShouldRefreshGrid() Then
 
             UpdGrid()
 
@@ -311,9 +287,9 @@ Public Class Form1
 
     Private Sub EmpfaengerCB_Leave(sender As Object, e As EventArgs) Handles EmpfaengerCB.Leave
 
-        If EmpfaengerCB.Text = "" Then
+        If String.IsNullOrWhiteSpace(EmpfaengerCB.Text) Then
 
-            EmpfaengerCB.Text = "Empfänger"
+            EmpfaengerCB.Text = UiText.RecipientPlaceholder
 
         End If
 
@@ -329,25 +305,13 @@ Public Class Form1
 
         If e.KeyCode = Keys.Enter Then
 
-            If Not EmpfaengerCB.Items.Contains(EmpfaengerCB.Text) And Not EmpfaengerCB.Text = "Empfänger" And Not EmpfaengerCB.Text = "" Then
+            If MaybeOpenRecipientMaintenance() Then
 
-                If MsgBox("Empfänger Nicht Gefunden Eintragen? ;-)", vbYesNo) = vbYes Then
-
-                    Form3.Show()
-                    Form3.AbladestelleCB.Focus()
-                    Form3.NameCB.Text = EmpfaengerCB.Text
-
-                Else
-
-                    EmpfaengerCB.Focus()
-
-                End If
-
-            Else
-
-                EmpfaengerdatenSammeln()
+                Exit Sub
 
             End If
+
+            EmpfaengerdatenSammeln()
 
         End If
 
@@ -355,11 +319,11 @@ Public Class Form1
 
     Private Sub SendungsNummerTB_TextChanged(sender As Object, e As EventArgs) Handles SendungsNummerTB.TextChanged
 
-        If Not SendungsNummerTB.Text = "SendungsNummer" And Not SeiteCB.Text = "Seite" Then
+        If ShouldRefreshGrid() Then
 
             UpdGrid()
 
-        ElseIf senderCB.Text = "Poststelle" AndAlso EmpfaengerCb.text = "Poststelle" AndAlso SendungsNummerTB.Text = "Poststelle" Then
+        ElseIf packageFormService.IsEasterEggTriggered(SenderCB.Text, EmpfaengerCB.Text, SendungsNummerTB.Text) Then
 
             Form4.Show()
 
@@ -369,9 +333,9 @@ Public Class Form1
 
     Private Sub SendungsNummerTB_Leave(sender As Object, e As EventArgs) Handles SendungsNummerTB.Leave
 
-        If SendungsNummerTB.Text = "" Then
+        If String.IsNullOrWhiteSpace(SendungsNummerTB.Text) Then
 
-            SendungsNummerTB.Text = "SendungsNummer"
+            SendungsNummerTB.Text = UiText.TrackingNumberPlaceholder
 
         End If
 
@@ -379,7 +343,7 @@ Public Class Form1
 
     Private Sub DateTimePicker_ValueChanged(sender As Object, e As EventArgs) Handles DateTimePicker.ValueChanged
 
-        SeiteCB.Text = "Seite"
+        SeiteCB.Text = UiText.PagePlaceholder
         GenSeite()
         UpdGrid()
 
@@ -405,7 +369,7 @@ Public Class Form1
 
         End If
 
-        If Not SeiteCB.Text = "Seite" Then
+        If ShouldRefreshGrid() Then
 
             UpdGrid()
 
@@ -415,11 +379,11 @@ Public Class Form1
 
     Private Sub DruckenButton_Click(sender As Object, e As EventArgs) Handles DruckenButton.Click
 
-        If DatumFilterCB.Checked And Not SeiteCB.Text = "Alle" Then
+        If DatumFilterCB.Checked And Not String.Equals(SeiteCB.Text, UiText.AllPagesLabel, StringComparison.Ordinal) Then
 
             Drucken()
 
-        ElseIf MsgBox("Achtung der DatumFilter oder Alle Seiten Sind Ausgewählt! Wollen Sie wirklich Drucken?", vbYesNo + vbQuestion, "Achtung") = vbYes Then
+        ElseIf MsgBox("Achtung: Datumfilter ist aus oder alle Seiten sind ausgewaehlt. Wirklich drucken?", vbYesNo + vbQuestion, "Achtung") = vbYes Then
 
             Drucken()
 
@@ -434,12 +398,8 @@ Public Class Form1
         Try
 
             packageRepository.MarkPrinted(CreateCurrentPackageFilter())
-
             UpdGrid()
-
-            SenderCB.Text = "Sender"
-            EmpfaengerCB.Text = "Empfänger"
-            SendungsNummerTB.Text = "SendungsNummer"
+            ResetEntryFields()
         Catch ex As Exception
 
             MsgBox("Fehler:" & ex.Message)
@@ -450,25 +410,25 @@ Public Class Form1
 
     Private Sub EmpfaengerdatenSammeln()
 
-        Empf = EmpfaengerCB.Text
-        DTM = DateTimePicker.Text
-        Send = SenderCB.Text
-        SendNr = SendungsNummerTB.Text
+        If Not packageFormService.IsPackageEntryComplete(SenderCB.Text, EmpfaengerCB.Text, SendungsNummerTB.Text) Then
+
+            MsgBox("Bitte alle Felder ausfuellen! ;-)")
+            Exit Sub
+
+        End If
 
         Try
 
-            Dim recipient = recipientRepository.FindByName(Empf)
+            Dim recipient = recipientRepository.FindByName(EmpfaengerCB.Text)
 
             If recipient Is Nothing Then
 
-                MsgBox("Empfänger nicht gefunden! ;-)")
+                MsgBox("Empfaenger nicht gefunden! ;-)")
                 Exit Sub
 
             End If
 
-            Abl = recipient.Abladestelle
-            Mand = recipient.Mandant
-            Packeterfassen()
+            Packeterfassen(recipient)
         Catch ex As Exception
 
             MsgBox("Fehler:" & ex.Message)
@@ -477,121 +437,42 @@ Public Class Form1
 
     End Sub
 
-    Private Sub Packeterfassen()
+    Private Sub Packeterfassen(recipient As RecipientRecord)
 
-        If SenderCB.Text = "Sender" Or EmpfaengerCB.Text = "Empfänger" Or SendungsNummerTB.Text = "SendungsNummer" Or SenderCB.Text = "" Or EmpfaengerCB.Text = "" Or SendungsNummerTB.Text = "" Then
+        Try
 
-            MsgBox("Bitte alle Felder ausfüllen! ;-)")
+            packageRepository.Insert(packageFormService.CreatePackageRecord(recipient,
+                                                                          DateTimePicker.Text,
+                                                                          SenderCB.Text,
+                                                                          SendungsNummerTB.Text))
 
-        Else
+            SenderCBFuellen()
+            SenderCB.Focus()
+            ResetEntryFields()
+            SenderCB.SelectAll()
+            SeiteWaehlen(recipient.Mandant)
+        Catch ex As Exception
 
-            Try
+            MsgBox("Fehler:" & ex.Message)
 
-                packageRepository.Insert(New PackageRecord With {
-                    .Mandant = Mand,
-                    .Datum = DTM,
-                    .Abladestelle = Abl,
-                    .Sender = Send,
-                    .SendungsNummer = SendNr,
-                    .Empfaenger = Empf,
-                    .Unterschrift = "                                                           ",
-                    .Gedruckt = "0"
-                })
-
-                SenderCB.Items.Clear()
-                SenderCBFuellen()
-                SenderCB.Focus()
-                SenderCB.Text = "Sender"
-                SenderCB.SelectAll()
-                EmpfaengerCB.Text = "Empfänger"
-                SendungsNummerTB.Text = "SendungsNummer"
-                SeiteWaehlen()
-            Catch ex As Exception
-
-                MsgBox("Fehler:" & ex.Message)
-
-            End Try
-
-        End If
+        End Try
 
     End Sub
 
-    Private Sub SeiteWaehlen()
+    Private Sub SeiteWaehlen(mandant As String)
 
-        DTM = DateTimePicker.Text
-
-        SeiteCB.Items.Clear()
-        PopulateComboBox(SeiteCB, packageRepository.GetDistinctMandants(DTM), True)
-        SeiteCB.Items.Add("Alle")
-        SeiteCB.SelectedItem = Mand
+        RefreshMandantPages(DateTimePicker.Text)
+        SeiteCB.SelectedItem = mandant
 
     End Sub
 
     Private Sub SeitenFuellen()
 
-        If SenderCB.Text = "Sender" Or SenderCB.Text = "" Then
-
-            Send = "%"
-
-        Else
-
-            Send = "%" + SenderCB.Text + "%"
-
-        End If
-
-        If EmpfaengerCB.Text = "Empfänger" Or EmpfaengerCB.Text = "" Then
-
-            Empf = "%"
-
-        Else
-
-            Empf = "%" + EmpfaengerCB.Text + "%"
-
-        End If
-
-        If SendungsNummerTB.Text = "SendungsNummer" Or SendungsNummerTB.Text = "" Then
-
-            SendNr = "%"
-
-        Else
-
-            SendNr = "%" + SendungsNummerTB.Text + "%"
-
-        End If
-
-        If GedrucktCB.Checked Then
-
-            Gedruckt = "%"
-
-        Else
-
-            Gedruckt = "0"
-
-        End If
-
-        If DatumFilterCB.Checked Then
-
-            DTM = DateTimePicker.Text
-
-        Else
-
-            DTM = "%"
-
-        End If
-
-        If SeiteCB.Text = "Alle" Then
-
-            ste = "%"
-
-        Else
-
-            ste = SeiteCB.Text
-
-        End If
-
         Try
 
-            myData = packageRepository.Search(CreateCurrentPackageFilter())
+            Dim filter = CreateCurrentPackageFilter()
+            ste = filter.Mandant
+            myData = packageRepository.Search(filter)
             myBindingSource.DataSource = myData
 
             DataGridView1.DataSource = myBindingSource
@@ -623,21 +504,15 @@ Public Class Form1
 
     Private Sub GenSeite()
 
-        SeiteCB.Items.Clear()
-
         If DatumFilterCB.Checked Then
 
-            DTM = DateTimePicker.Text
-
-            PopulateComboBox(SeiteCB, packageRepository.GetDistinctMandants(DTM), True)
+            RefreshMandantPages(DateTimePicker.Text)
 
         Else
 
-            PopulateComboBox(SeiteCB, packageRepository.GetDistinctMandants(), True)
+            RefreshMandantPages()
 
         End If
-
-        SeiteCB.Items.Add("Alle")
 
     End Sub
 
@@ -679,13 +554,76 @@ Public Class Form1
 
         If EasterEggCounter = 5 Then
 
-            SenderCB.Text = "Poststelle"
-            EmpfaengerCB.Text = "Poststelle"
-            SendungsNummerTB.Text = "Poststelle"
+            SenderCB.Text = UiText.EasterEggTrigger
+            EmpfaengerCB.Text = UiText.EasterEggTrigger
+            SendungsNummerTB.Text = UiText.EasterEggTrigger
 
             EasterEggCounter = 0
 
         End If
+
+    End Sub
+
+    Private Sub ReloadUiData()
+
+        EmpfaengerCBFuellen()
+        SenderCBFuellen()
+        ResetEntryFields()
+        GenSeite()
+        UpdGrid()
+
+    End Sub
+
+    Private Sub ResetEntryFields()
+
+        SenderCB.Text = UiText.SenderPlaceholder
+        EmpfaengerCB.Text = UiText.RecipientPlaceholder
+        SendungsNummerTB.Text = UiText.TrackingNumberPlaceholder
+
+    End Sub
+
+    Private Function ShouldRefreshGrid() As Boolean
+
+        Return Not String.Equals(SeiteCB.Text, UiText.PagePlaceholder, StringComparison.Ordinal)
+
+    End Function
+
+    Private Function MaybeOpenRecipientMaintenance() As Boolean
+
+        If Not packageFormService.NeedsRecipientPrompt(EmpfaengerCB.Text, GetComboBoxValues(EmpfaengerCB)) Then
+
+            Return False
+
+        End If
+
+        If MsgBox("Empfaenger nicht gefunden. Neu anlegen?", vbYesNo) = vbYes Then
+
+            Form3.Show()
+            Form3.AbladestelleCB.Focus()
+            Form3.NameCB.Text = EmpfaengerCB.Text
+            Return True
+
+        End If
+
+        Return False
+
+    End Function
+
+    Private Sub RefreshMandantPages(Optional selectedDate As String = Nothing)
+
+        SeiteCB.Items.Clear()
+
+        If String.IsNullOrWhiteSpace(selectedDate) Then
+
+            PopulateComboBox(SeiteCB, packageRepository.GetDistinctMandants(), True)
+
+        Else
+
+            PopulateComboBox(SeiteCB, packageRepository.GetDistinctMandants(selectedDate), True)
+
+        End If
+
+        SeiteCB.Items.Add(UiText.AllPagesLabel)
 
     End Sub
 
@@ -705,16 +643,29 @@ Public Class Form1
 
     End Sub
 
+    Private Function GetComboBoxValues(target As ComboBox) As IEnumerable(Of String)
+
+        Dim values As New List(Of String)()
+
+        For Each item As Object In target.Items
+
+            values.Add(Convert.ToString(item))
+
+        Next
+
+        Return values
+
+    End Function
+
     Private Function CreateCurrentPackageFilter() As PackageFilter
 
-        Return New PackageFilter With {
-            .Datum = DTM,
-            .Mandant = ste,
-            .Sender = Send,
-            .SendungsNummer = SendNr,
-            .Empfaenger = Empf,
-            .Gedruckt = Gedruckt
-        }
+        Return packageFormService.BuildFilter(DatumFilterCB.Checked,
+                                              DateTimePicker.Text,
+                                              SeiteCB.Text,
+                                              SenderCB.Text,
+                                              EmpfaengerCB.Text,
+                                              SendungsNummerTB.Text,
+                                              GedrucktCB.Checked)
 
     End Function
 
