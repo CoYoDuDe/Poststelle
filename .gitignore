@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.db-shm
+*.db-wal
+Poststelle.db
+PoststelleBackup.db
