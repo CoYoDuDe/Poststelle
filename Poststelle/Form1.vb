@@ -601,11 +601,8 @@ Public Class Form1
 
         If EasterEggCounter = 5 Then
 
-            SenderCB.Text = UiText.EasterEggTrigger
-            EmpfaengerCB.Text = UiText.EasterEggTrigger
-            SendungsNummerTB.Text = UiText.EasterEggTrigger
-
             EasterEggCounter = 0
+            Form4.Show()
 
         End If
 
