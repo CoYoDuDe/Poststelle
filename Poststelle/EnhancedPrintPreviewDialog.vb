@@ -6,6 +6,7 @@
 
     Private Sub myPrintPreview_Shown(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Shown
 
+        ApplyApplicationIcon(Me)
         Me.WindowState = System.Windows.Forms.FormWindowState.Maximized
 
         If ShowCounter = True Then

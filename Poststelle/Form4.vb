@@ -41,6 +41,8 @@
 
     Private Sub Form4_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
+        ApplyApplicationIcon(Me)
+
     End Sub
 
 

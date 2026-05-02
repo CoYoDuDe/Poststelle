@@ -2,6 +2,22 @@ Option Strict On
 
 Imports System.Text.RegularExpressions
 
+Public Module AppShell
+
+    Public Sub ApplyApplicationIcon(target As System.Windows.Forms.Form)
+
+        If target Is Nothing Then
+
+            Exit Sub
+
+        End If
+
+        target.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Windows.Forms.Application.ExecutablePath)
+
+    End Sub
+
+End Module
+
 Public Module UiText
 
     Public Const SenderPlaceholder As String = "Sender"

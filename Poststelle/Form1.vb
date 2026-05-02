@@ -93,8 +93,11 @@ Public Class Form1
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
+        ApplyApplicationIcon(Me)
         Me.SS.SizingGrip = False
         ToolStripStatusLabel1.Text = "Bereit"
+        PictureBox1.Cursor = Cursors.Hand
+        Panel3.Cursor = Cursors.Hand
 
         Try
 
@@ -592,7 +595,7 @@ Public Class Form1
 
     Dim EasterEggCounter As Integer
 
-    Private Sub PictureBox1_Click(sender As Object, e As EventArgs) Handles PictureBox1.Click
+    Private Sub PictureBox1_Click(sender As Object, e As EventArgs) Handles PictureBox1.Click, Panel3.Click
 
         EasterEggCounter = EasterEggCounter + 1
 
