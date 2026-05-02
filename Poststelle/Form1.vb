@@ -1,3 +1,5 @@
+Option Strict On
+
 Imports System.Drawing
 Imports System.Drawing.Printing
 Imports System.IO
@@ -410,7 +412,7 @@ Public Class Form1
 
             Drucken()
 
-        ElseIf MsgBox("Achtung: Datumfilter ist aus oder alle Seiten sind ausgewaehlt. Wirklich drucken?", vbYesNo + vbQuestion, "Achtung") = vbYes Then
+        ElseIf MsgBox("Achtung: Datumfilter ist aus oder alle Seiten sind ausgewaehlt. Wirklich drucken?", vbYesNo Or vbQuestion, "Achtung") = vbYes Then
 
             Drucken()
 

@@ -1,4 +1,6 @@
-﻿Namespace My
+﻿Option Strict On
+
+Namespace My
     ' Für MyApplication sind folgende Ereignisse verfügbar:
     ' Startup: Wird beim Starten der Anwendung noch vor dem Erstellen des Startformulars ausgelöst.
     ' Shutdown: Wird nach dem Schließen aller Anwendungsformulare ausgelöst.  Dieses Ereignis wird nicht ausgelöst, wenn die Anwendung mit einem Fehler beendet wird.

@@ -1,3 +1,5 @@
+Option Strict On
+
 Public Class Form3
 
     Private ReadOnly recipientRepository As New RecipientRepository()

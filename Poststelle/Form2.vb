@@ -1,3 +1,5 @@
+Option Strict On
+
 Public Class Form2
 
     Private ReadOnly settingsRepository As New SettingsRepository()

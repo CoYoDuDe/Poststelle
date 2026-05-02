@@ -1,4 +1,6 @@
-﻿Public Class Form4
+﻿Option Strict On
+
+Public Class Form4
 
     Dim drag As Boolean
     Dim mousex As Integer

@@ -1,4 +1,6 @@
-﻿Public Class EnhancedPrintPreviewDialog
+﻿Option Strict On
+
+Public Class EnhancedPrintPreviewDialog
 
     Inherits System.Windows.Forms.PrintPreviewDialog
 
