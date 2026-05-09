@@ -54,13 +54,3 @@ Build-Dateien:
 
 - [Poststelle.sln](/C:/Users/lotha/Poststelle/Poststelle.sln)
 - [Poststelle.vbproj](/C:/Users/lotha/Poststelle/Poststelle/Poststelle.vbproj:1)
-
-## Hinweise
-
-- Die Anwendung ist ein klassisches WinForms-Tool und nicht fuer Linux oder macOS gedacht.
-- Unter Linux laesst sich das Projekt teilweise analysieren, aber nicht verlaesslich fertig kompilieren.
-- Es gibt keine automatisierten Tests; Verifikation erfolgt derzeit ueber Windows-Build und manuelle Funktionspruefung.
-
-## Weitere Dateien
-
-- [MIGRATION.md](/C:/Users/lotha/Poststelle/MIGRATION.md)
