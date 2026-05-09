@@ -54,3 +54,21 @@ Build-Dateien:
 
 - `Poststelle.sln`
 - `Poststelle/Poststelle.vbproj`
+
+## Download und SmartScreen
+
+Die Release-Dateien werden als ZIP ueber GitHub Releases bereitgestellt.
+
+Hinweis zu Windows SmartScreen:
+
+- Die Anwendung ist nicht digital signiert.
+- Deshalb kann Windows beim ersten Start `Unbekannter Herausgeber` anzeigen.
+- Das ist bei kleinen, nicht signierten Desktop-Tools normal.
+
+Zur Pruefung eines Downloads:
+
+- ZIP nur aus dem offiziellen GitHub Release laden
+- bereitgestellte `SHA256SUMS.txt` mit der lokalen Datei vergleichen
+- Quellcode und Release stammen aus demselben oeffentlichen Repository
+
+Eine kurze Startanleitung steht in `INSTALL.md`.
