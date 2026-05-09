@@ -9,10 +9,10 @@ Imports System.Runtime.InteropServices
 ' Werte der Assemblyattribute überprüfen
 
 <Assembly: AssemblyTitle("Poststelle")>
-<Assembly: AssemblyDescription("")>
-<Assembly: AssemblyCompany("")>
+<Assembly: AssemblyDescription("Windows-Tool zur Erfassung und Verwaltung von Paketsendungen")>
+<Assembly: AssemblyCompany("CoYoDuDe")>
 <Assembly: AssemblyProduct("Poststelle")>
-<Assembly: AssemblyCopyright("Copyright ©  2017")>
+<Assembly: AssemblyCopyright("Copyright © CoYoDuDe")>
 <Assembly: AssemblyTrademark("")>
 
 <Assembly: ComVisible(False)>
