@@ -1,86 +1,66 @@
 # Poststelle
 
-`Poststelle` ist ein archiviertes und bereinigtes VB.NET-WinForms-Projekt fuer die Erfassung eingehender Sendungen mit SQLite.
+`Poststelle` ist eine kleine Windows-Desktop-Anwendung zur Erfassung eingehender Sendungen.
 
-Dieses Repository bewahrt den historischen Stand in einer Form, die wieder nachvollziehbar, umbenannt und fuer eine spaetere Modernisierung vorbereitet ist.
+Sie speichert Pakete und Empfaenger in einer lokalen SQLite-Datenbank, zeigt offene Eintraege in einer Tabelle an und unterstuetzt die schnelle Erfassung ueber Sender, Empfaenger und Sendungsnummer.
 
 ## Screenshot
 
 ![Poststelle Hauptfenster](docs/poststelle-main.png)
 
-## Stand
+## Funktionen
 
-- Technologie: VB.NET, WinForms, .NET Framework 4.6.1
-- Datenbank: SQLite (`Poststelle.db`)
-- Ziel: bestehende Desktop-Anwendung erhalten, entmarken und fuer spaetere Weiterentwicklung vorbereiten
+- Erfassung eingehender Pakete und Sendungen
+- Verwaltung von Empfaengern mit Name, Abladestelle und Mandant
+- Filtern und Suchen nach Datum, Seite, Sender, Empfaenger und Sendungsnummer
+- Druckansicht und Ausdruck der offenen Liste
+- lokale SQLite-Speicherung ohne externen Server
+- einfache Backup-Einstellungen fuer die Datenbank
+- erste Scan-/Barcode-Unterstuetzung fuer Sendungsnummern mit Carrier-Erkennung und gespeicherten Zuordnungsregeln
 
-## Was in dieser Fassung bereinigt wurde
+## Technischer Stand
 
-- Projekt, Solution und Assembly auf `Poststelle` umbenannt
-- alte Build-Artefakte (`bin`, `obj`, `*.user`) entfernt
-- neue neutrale Logo- und Icon-Dateien ohne Alt-Branding erzeugt
-- Git-Ignore fuer lokale Datenbanken und Build-Dateien hinzugefuegt
-- Modernisierungsnotizen dokumentiert
-- SQLite-Zugriffe in gemeinsame Repositories ausgelagert
-- Formularlogik in Services fuer Filter, Validierung und Datensatz-Erzeugung aufgeteilt
-- Windows-Build mit aktuellem Refactoring erneut erfolgreich geprueft
+- Sprache: VB.NET
+- UI: WinForms
+- Framework: .NET Framework 4.6.1
+- Datenbank: SQLite
+- Plattform: Windows
 
-## Projektstruktur
+## Datenhaltung
 
-- [Poststelle.sln](/root/poststelle/Poststelle.sln)
-- [Poststelle](/root/poststelle/Poststelle)
-- [MIGRATION.md](/root/poststelle/MIGRATION.md)
+Die Anwendung legt ihre SQLite-Datenbank standardmaessig im Benutzerprofil ab:
 
-## Build-Hinweise
+- `%LOCALAPPDATA%\Poststelle\Poststelle.db`
 
-Zum Bauen wird aktuell eine Windows-Umgebung mit Visual Studio 2017 oder neuer benoetigt, inklusive .NET Framework 4.6.1 Developer Pack.
+Dort liegt auch der Standardpfad fuer lokale Backups.
 
-NuGet-Abhaengigkeiten liegen im klassischen `packages`-Format vor. Vor dem ersten Build sollte eine Paket-Wiederherstellung ausgefuehrt werden.
+## Nutzung
 
-## Linux-Status
+1. Empfaenger pflegen
+2. Sender, Empfaenger und Sendungsnummer eingeben oder scannen
+3. Paket speichern
+4. Offene Liste pruefen, filtern und bei Bedarf drucken
 
-Eine partielle Build-Pruefung unter Debian 12 mit Mono wurde getestet.
+## Build
 
-- `mono-devel` und `xbuild` lassen sich installieren
-- Ressourcen, Projektdatei und Referenzen werden verarbeitet
-- der eigentliche VB.NET-Compile-Schritt scheitert unter Debian-Mono, weil Mono hier keinen funktionierenden Visual-Basic-Compiler (`vbnc.exe`) mehr mitliefert
+Zum Bauen wird eine Windows-Umgebung mit Visual Studio 2017 oder neuer benoetigt.
 
-Das bedeutet: Linux ist fuer statische Analyse, Refactoring und Projektpflege brauchbar, aber fuer einen verlaesslichen Release-Build dieses alten VB.NET-WinForms-Projekts aktuell nicht die richtige Zielumgebung.
+Voraussetzungen:
 
-Wenn die temporaer installierte Linux-Build-Umgebung spaeter wieder entfernt werden soll:
+- .NET Framework 4.6.1 Developer Pack
+- NuGet-Pakete aus `packages.config`
 
-```bash
-apt-get remove -y mono-devel
-apt-get autoremove -y
-```
+Build-Dateien:
 
-## Bekannte technische Schulden
+- [Poststelle.sln](/C:/Users/lotha/Poststelle/Poststelle.sln)
+- [Poststelle.vbproj](/C:/Users/lotha/Poststelle/Poststelle/Poststelle.vbproj:1)
 
-- Windows-only durch klassisches WinForms auf .NET Framework
-- weiterhin alte Designer- und Event-Strukturen aus WinForms-Zeiten
-- `Option Strict Off` erschwert sichere Refactorings
-- keine automatisierten Tests
-- klassisches `packages.config` statt modernem SDK-/PackageReference-Stil
-- keine Build-Umgebung im aktuellen Export enthalten
+## Hinweise
 
-## Aktueller Modernisierungsstand
+- Die Anwendung ist ein klassisches WinForms-Tool und nicht fuer Linux oder macOS gedacht.
+- Unter Linux laesst sich das Projekt teilweise analysieren, aber nicht verlaesslich fertig kompilieren.
+- Es gibt keine automatisierten Tests; Verifikation erfolgt derzeit ueber Windows-Build und manuelle Funktionspruefung.
 
-Die Anwendung ist wieder in einem brauchbaren Zwischenzustand:
+## Weitere Dateien
 
-- Datenzugriffe liegen nicht mehr verstreut in `Form1`, `Form2` und `Form3`, sondern in gemeinsamen Repository-Klassen
-- wiederholte UI- und Filterlogik wurde in `ApplicationServices.vb` zentralisiert
-- der Windows-Build laeuft nach dem Refactoring wieder durch
-
-Das ist noch keine komplette Neuentwicklung, aber ein sinnvoller Zustand fuer weitere Pflege, Releases und spaetere Portierung.
-
-## Empfehlung
-
-Fuer eine spaetere echte Modernisierung ist der sinnvollste naechste Schritt keine Vollmigration in eine andere Sprache auf Verdacht, sondern zuerst:
-
-1. Build unter Windows wiederherstellen
-2. Datenbankzugriffe kapseln und parameterisieren
-3. `Option Strict` vorbereiten und implizite Konvertierungen abbauen
-4. das Projekt auf ein modernes .NET-Windows-Target heben
-5. erst danach ueber C#-Migration oder komplette Neuentwicklung entscheiden
-
-Kurz gesagt: jetzt sauber in .NET/VB.NET weiter aufraeumen, nicht sofort die Sprache wechseln. Eine C#-Migration ist sinnvoller als spaeterer Schritt, sobald Verhalten, Build und Datenzugriff stabilisiert sind.
+- [MIGRATION.md](/C:/Users/lotha/Poststelle/MIGRATION.md)
