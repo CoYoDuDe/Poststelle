@@ -4,6 +4,10 @@
 
 Dieses Repository bewahrt den historischen Stand in einer Form, die wieder nachvollziehbar, umbenannt und fuer eine spaetere Modernisierung vorbereitet ist.
 
+## Screenshot
+
+![Poststelle Hauptfenster](docs/poststelle-main.png)
+
 ## Stand
 
 - Technologie: VB.NET, WinForms, .NET Framework 4.6.1
