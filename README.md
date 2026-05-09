@@ -48,7 +48,7 @@ Zum Bauen wird eine Windows-Umgebung mit Visual Studio 2017 oder neuer benoetigt
 Voraussetzungen:
 
 - .NET Framework 4.6.1 Developer Pack
-- NuGet-Pakete aus `packages.config`
+- lokale SQLite-Bibliotheken im Projekt unter `Poststelle/lib/sqlite`
 
 Build-Dateien:
 
