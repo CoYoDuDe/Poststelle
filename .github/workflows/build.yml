@@ -1,0 +1,32 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Release
+        run: msbuild Poststelle.sln /t:Build /p:Configuration=Release
+
+      - name: Upload Release Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: Poststelle-Release
+          path: |
+            Poststelle/bin/Release/Poststelle.exe
+            Poststelle/bin/Release/Poststelle.exe.config
+            Poststelle/bin/Release/System.Data.SQLite.dll
+            Poststelle/bin/Release/x86/SQLite.Interop.dll
+            Poststelle/bin/Release/x64/SQLite.Interop.dll
